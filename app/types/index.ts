@@ -22,21 +22,29 @@ export type CommentWithReplies = Comment & {
 
 // Board Analytics Type
 export interface BoardAnalytics {
-  total_requests: number;
-  total_upvotes: number;
-  total_comments: number;
-  status_breakdown: {
+  totalRequests: number;
+  totalUpvotes: number;
+  totalComments: number;
+  statusBreakdown: {
     new: number;
-    in_progress: number;
+    inProgress: number;
     shipped: number;
     cancelled: number;
   };
-  recent_activity: {
+  recentActivity: {
     date: string;
-    requests_count: number;
-    upvotes_count: number;
+    requestsCount: number;
+    upvotesCount: number;
   }[];
-  top_requests: FeatureRequest[];
+  topRequests: FeatureRequest[];
+}
+
+// Dashboard Stats Type
+export interface DashboardStats {
+  totalBoards: number;
+  totalRequests: number;
+  totalUpvotes: number;
+  activeBoards: number;
 }
 
 // Form types
@@ -44,22 +52,30 @@ export interface CreateBoardFormData {
   title: string;
   description?: string;
   slug: string;
-  theme_config?: Record<string, unknown>;
-  is_public: boolean;
+  themeConfig?: Record<string, unknown>;
+  isPublic: boolean;
+}
+
+export interface UpdateBoardFormData {
+  title?: string;
+  description?: string;
+  slug?: string;
+  themeConfig?: Record<string, unknown>;
+  isPublic?: boolean;
 }
 
 export interface CreateFeatureRequestFormData {
   title: string;
   description?: string;
-  submitter_name?: string;
-  submitter_email?: string;
+  submitterName?: string;
+  submitterEmail?: string;
 }
 
 export interface CreateCommentFormData {
   content: string;
-  author_name: string;
-  author_email: string;
-  parent_comment_id?: string;
+  authorName: string;
+  authorEmail: string;
+  parentCommentId?: string;
 }
 
 // API Response types
@@ -68,6 +84,14 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
   message?: string;
+}
+
+// Navigation types
+export interface NavItem {
+  name: string;
+  href: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  current?: boolean;
 }
 
 // Re-export Prisma types
