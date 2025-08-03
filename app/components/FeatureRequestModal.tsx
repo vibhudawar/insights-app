@@ -13,6 +13,8 @@ interface FeatureRequestModalProps {
  onClose: () => void;
  onUpvote: (requestId: string) => void;
  userIdentifier: string;
+ isAdmin?: boolean;
+ onStatusUpdate?: (requestId: string, newStatus: string) => void;
 }
 
 export function FeatureRequestModal({
@@ -22,6 +24,8 @@ export function FeatureRequestModal({
  onUpvote,
  // eslint-disable-next-line @typescript-eslint/no-unused-vars
  userIdentifier, // Used by parent component for upvoting
+ isAdmin = false,
+ onStatusUpdate,
 }: FeatureRequestModalProps) {
  const [comments, setComments] = useState<CommentWithReplies[]>([]);
  const [isLoadingComments, setIsLoadingComments] = useState(false);
@@ -35,6 +39,8 @@ export function FeatureRequestModal({
  });
  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
  const [commentError, setCommentError] = useState("");
+ const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+ const [selectedStatus, setSelectedStatus] = useState<string>(request.status);
 
  const getStatusBadge = (status: string) => {
   const statusColors = {
@@ -142,6 +148,34 @@ export function FeatureRequestModal({
   setShowCommentForm(true);
  };
 
+ const handleStatusUpdate = async () => {
+  if (!onStatusUpdate || selectedStatus === request.status) return;
+  
+  setIsUpdatingStatus(true);
+  try {
+   const response = await fetch(`/api/feature-requests/${request.id}/status`, {
+    method: "PUT",
+    headers: {
+     "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status: selectedStatus }),
+   });
+
+   if (response.ok) {
+    onStatusUpdate(request.id, selectedStatus);
+   } else {
+    const errorData = await response.json();
+    alert(errorData.error || "Failed to update status");
+    setSelectedStatus(request.status); // Reset to original status
+   }
+  } catch {
+   alert("An error occurred. Please try again.");
+   setSelectedStatus(request.status); // Reset to original status
+  } finally {
+   setIsUpdatingStatus(false);
+  }
+ };
+
  if (!isOpen) return null;
 
  return (
@@ -168,6 +202,44 @@ export function FeatureRequestModal({
      <div className="mb-6">
       <div className="bg-base-200 rounded-lg p-4">
        <p className="whitespace-pre-wrap">{request.description}</p>
+      </div>
+     </div>
+    )}
+
+    {/* Admin Status Update */}
+    {isAdmin && (
+     <div className="mb-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
+      <h4 className="font-semibold mb-3 flex items-center gap-2">
+       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+       </svg>
+       Admin: Update Status
+      </h4>
+      <div className="flex items-center gap-3">
+       <select
+        className="select select-bordered select-sm"
+        value={selectedStatus}
+        onChange={(e) => setSelectedStatus(e.target.value)}
+       >
+        <option value="NEW">New</option>
+        <option value="IN_PROGRESS">In Progress</option>
+        <option value="SHIPPED">Shipped</option>
+        <option value="CANCELLED">Cancelled</option>
+       </select>
+       <button
+        onClick={handleStatusUpdate}
+        className="btn btn-sm btn-primary"
+        disabled={isUpdatingStatus || selectedStatus === request.status}
+       >
+        {isUpdatingStatus ? (
+         <>
+          <span className="loading loading-spinner loading-xs"></span>
+          Updating...
+         </>
+        ) : (
+         "Update Status"
+        )}
+       </button>
       </div>
      </div>
     )}

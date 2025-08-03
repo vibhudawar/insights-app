@@ -2,6 +2,7 @@
 
 import {useEffect, useState, useCallback} from "react";
 import {useParams} from "next/navigation";
+import {useSession} from "next-auth/react";
 import Link from "next/link";
 import {
  BoardWithRequests,
@@ -27,6 +28,7 @@ const sortOptions = [
 export default function PublicBoardPage() {
  const params = useParams();
  const slug = params.slug as string;
+ const { data: session } = useSession();
 
  const [board, setBoard] = useState<BoardWithRequests | null>(null);
  const [featureRequests, setFeatureRequests] = useState<
@@ -184,6 +186,20 @@ export default function PublicBoardPage() {
  const handleCloseModal = () => {
   setIsModalOpen(false);
   setSelectedRequest(null);
+ };
+
+ const handleStatusUpdate = (requestId: string, newStatus: string) => {
+  // Update the local state to reflect the change immediately
+  setFeatureRequests(prev => 
+   prev.map(req => 
+    req.id === requestId ? { ...req, status: newStatus as RequestStatus } : req
+   )
+  );
+  
+  // Update the selected request if it's the one being updated
+  if (selectedRequest && selectedRequest.id === requestId) {
+   setSelectedRequest({ ...selectedRequest, status: newStatus as RequestStatus });
+  }
  };
 
  const getStatusBadge = (status: RequestStatus) => {
@@ -659,6 +675,8 @@ export default function PublicBoardPage() {
      onClose={handleCloseModal}
      onUpvote={handleUpvote}
      userIdentifier={userIdentifier}
+     isAdmin={(session?.user as { id?: string })?.id === board?.creator_id}
+     onStatusUpdate={handleStatusUpdate}
     />
    )}
   </div>
