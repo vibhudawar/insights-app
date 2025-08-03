@@ -334,7 +334,7 @@ export function FeatureRequestModal({
          {/* Replies */}
          {comment.replies && comment.replies.length > 0 && (
           <div className="ml-8 mt-2 space-y-2">
-           {comment.replies.map((reply: any) => (
+           {comment.replies.map((reply: { id: string; content: string; author_name: string; created_at: Date }) => (
             <div
              key={reply.id}
              className="flex gap-3 p-3 bg-base-100 rounded-lg border-l-2 border-primary/20"
