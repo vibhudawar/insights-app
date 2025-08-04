@@ -90,7 +90,7 @@ export interface ApiResponse<T> {
 export interface NavItem {
   name: string;
   href: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string; isActive?: boolean }>;
   current?: boolean;
 }
 

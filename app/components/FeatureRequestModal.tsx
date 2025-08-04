@@ -380,8 +380,8 @@ export function FeatureRequestModal({
          {/* Main Comment */}
          <div className="flex gap-3 p-4 bg-base-50 rounded-lg">
           <div className="avatar placeholder">
-           <div className="bg-neutral text-neutral-content rounded-full w-8">
-            <span className="text-xs">
+           <div className="bg-neutral text-neutral-content rounded-full w-8 h-8 flex items-center justify-center">
+            <span className="text-sm">
              {comment.author_name?.charAt(0).toUpperCase() || "A"}
             </span>
            </div>
@@ -409,10 +409,10 @@ export function FeatureRequestModal({
            {comment.replies.map((reply: { id: string; content: string; author_name: string; created_at: Date }) => (
             <div
              key={reply.id}
-             className="flex gap-3 p-3 bg-base-100 rounded-lg border-l-2 border-primary/20"
+             className="flex gap-3 p-3 bg-base-100 rounded-lg"
             >
              <div className="avatar placeholder">
-              <div className="bg-neutral text-neutral-content rounded-full w-6">
+              <div className="bg-neutral text-neutral-content rounded-full w-6 h-6 flex items-center justify-center">
                <span className="text-xs">
                 {reply.author_name?.charAt(0).toUpperCase() || "A"}
                </span>
