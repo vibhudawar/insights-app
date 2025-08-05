@@ -1,7 +1,9 @@
 "use client";
 
 import {useSession, signOut} from "next-auth/react";
+import Link from "next/link";
 import Image from "next/image";
+import {usePathname} from "next/navigation";
 import {ReactNode} from "react";
 import {NavItem} from "@/types";
 import {RiDashboardLine, RiDashboardFill} from "react-icons/ri";
@@ -12,7 +14,6 @@ import {
  HiViewBoards,
  HiOutlineViewBoards,
 } from "react-icons/hi";
-import {Link, usePathname} from "@/i18n/navigation";
 
 interface DashboardLayoutProps {
  children: ReactNode;

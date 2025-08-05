@@ -1,0 +1,91 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "boards": "Boards",
+    "settings": "Einstellungen",
+    "analytics": "Analytik"
+  },
+  "board": {
+    "title": "Board-Titel",
+    "description": "Beschreibung",
+    "publicBoard": "Öffentliches Board",
+    "editBoard": "Board Bearbeiten",
+    "deleteBoard": "Board Löschen",
+    "boardNotFound": "Board Nicht Gefunden",
+    "backToDashboard": "Zurück zum Dashboard",
+    "saveChanges": "Änderungen Speichern",
+    "savingChanges": "Änderungen Werden Gespeichert...",
+    "boardUpdated": "Board erfolgreich aktualisiert!",
+    "boardDeleted": "Board erfolgreich gelöscht!",
+    "failedToUpdate": "Fehler beim Aktualisieren des Boards. Bitte versuchen Sie es erneut.",
+    "failedToDelete": "Fehler beim Löschen des Boards. Bitte versuchen Sie es erneut.",
+    "confirmDelete": "Sind Sie sicher, dass Sie \"{title}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden und löscht alle mit diesem Board verbundenen Feature-Anfragen.",
+    "boardUrl": "Board-URL",
+    "onlyLowercase": "Nur Kleinbuchstaben, Zahlen und Bindestriche",
+    "allowPublicSubmissions": "Jedem erlauben, Feature-Anfragen zu sehen und einzureichen"
+  },
+  "theme": {
+    "customization": "Theme-Anpassung",
+    "primaryColor": "Primärfarbe",
+    "backgroundColor": "Hintergrundfarbe",
+    "textColor": "Textfarbe",
+    "reset": "Zurücksetzen",
+    "showPreview": "Vorschau Anzeigen", 
+    "hidePreview": "Vorschau Ausblenden",
+    "livePreview": "Live-Vorschau"
+  },
+  "form": {
+    "required": "*",
+    "placeholder": {
+      "boardTitle": "Board-Titel eingeben",
+      "description": "Beschreiben Sie, wofür dieses Board ist...",
+      "boardSlug": "board-slug"
+    }
+  },
+  "navigation": {
+    "viewPublicBoard": "Öffentliches Board Anzeigen"
+  },
+  "dangerZone": "Gefahrenzone",
+  "language": {
+    "switchLanguage": "Sprache Wechseln",
+    "english": "Englisch",
+    "french": "Französisch",
+    "spanish": "Spanisch",
+    "german": "Deutsch"
+  },
+  "publicBoard": {
+    "submitRequest": "Anfrage Einreichen",
+    "totalRequests": "Gesamte Anfragen",
+    "searchRequests": "Anfragen suchen...",
+    "noRequestsYet": "Noch keine Feature-Anfragen",
+    "beTheFirst": "Seien Sie der Erste, der ein Feature für dieses Produkt vorschlägt!",
+    "submitFirstRequest": "Erste Anfrage Einreichen",
+    "submitFeatureRequest": "Feature-Anfrage Einreichen",
+    "featureTitle": "Feature-Titel",
+    "featureTitlePlaceholder": "Beschreiben Sie kurz das gewünschte Feature",
+    "descriptionPlaceholder": "Geben Sie weitere Details zu Ihrer Feature-Anfrage an...",
+    "yourName": "Ihr Name",
+    "yourNamePlaceholder": "Geben Sie Ihren Namen ein (optional)",
+    "yourEmail": "Ihre E-Mail",
+    "yourEmailPlaceholder": "Geben Sie Ihre E-Mail ein",
+    "cancel": "Abbrechen",
+    "submitting": "Wird Eingereicht...",
+    "comments": "Kommentare",
+    "boardNotFound": "Board Nicht Gefunden",
+    "boardNotFoundMessage": "Das Feedback-Board, das Sie suchen, existiert nicht oder wurde privat gemacht.",
+    "goHome": "Zur Startseite",
+    "byAnonymous": "Von Anonym",
+    "status": {
+      "all": "Alle",
+      "new": "Neu",
+      "inProgress": "In Bearbeitung",
+      "shipped": "Versendet",
+      "cancelled": "Abgebrochen"
+    },
+    "sort": {
+      "mostUpvoted": "Am Meisten Bewertet",
+      "newest": "Neueste",
+      "oldest": "Älteste"
+    }
+  }
+}

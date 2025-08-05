@@ -1,0 +1,91 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "boards": "Boards",
+    "settings": "Settings",
+    "analytics": "Analytics"
+  },
+  "board": {
+    "title": "Board Title",
+    "description": "Description", 
+    "publicBoard": "Public Board",
+    "editBoard": "Edit Board",
+    "deleteBoard": "Delete Board",
+    "boardNotFound": "Board Not Found",
+    "backToDashboard": "Back to Dashboard",
+    "saveChanges": "Save Changes",
+    "savingChanges": "Saving Changes...",
+    "boardUpdated": "Board updated successfully!",
+    "boardDeleted": "Board deleted successfully!",
+    "failedToUpdate": "Failed to update board. Please try again.",
+    "failedToDelete": "Failed to delete board. Please try again.",
+    "confirmDelete": "Are you sure you want to delete \"{title}\"? This action cannot be undone and will delete all feature requests associated with this board.",
+    "boardUrl": "Board URL",
+    "onlyLowercase": "Only lowercase letters, numbers, and dashes",
+    "allowPublicSubmissions": "Allow anyone to view and submit feature requests"
+  },
+  "theme": {
+    "customization": "Theme Customization",
+    "primaryColor": "Primary Color", 
+    "backgroundColor": "Background Color",
+    "textColor": "Text Color",
+    "reset": "Reset",
+    "showPreview": "Show Preview",
+    "hidePreview": "Hide Preview",
+    "livePreview": "Live Preview"
+  },
+  "form": {
+    "required": "*",
+    "placeholder": {
+      "boardTitle": "Enter board title",
+      "description": "Describe what this board is for...",
+      "boardSlug": "board-slug"
+    }
+  },
+  "navigation": {
+    "viewPublicBoard": "View Public Board"
+  },
+  "dangerZone": "Danger Zone",
+  "language": {
+    "switchLanguage": "Switch Language",
+    "english": "English",
+    "french": "French", 
+    "spanish": "Spanish",
+    "german": "German"
+  },
+  "publicBoard": {
+    "submitRequest": "Submit Request",
+    "totalRequests": "Total Requests",
+    "searchRequests": "Search requests...",
+    "noRequestsYet": "No feature requests yet",
+    "beTheFirst": "Be the first to suggest a feature for this product!",
+    "submitFirstRequest": "Submit First Request",
+    "submitFeatureRequest": "Submit Feature Request",
+    "featureTitle": "Feature Title",
+    "featureTitlePlaceholder": "Briefly describe the feature you'd like",
+    "descriptionPlaceholder": "Provide more details about your feature request...",
+    "yourName": "Your Name",
+    "yourNamePlaceholder": "Enter your name (optional)",
+    "yourEmail": "Your Email",  
+    "yourEmailPlaceholder": "Enter your email",
+    "cancel": "Cancel",
+    "submitting": "Submitting...",
+    "comments": "comments",
+    "boardNotFound": "Board Not Found",
+    "boardNotFoundMessage": "The feedback board you're looking for doesn't exist or has been made private.",
+    "goHome": "Go Home",
+    "byAnonymous": "By Anonymous",
+    "status": {
+      "all": "All",
+      "new": "New", 
+      "inProgress": "In Progress",
+      "shipped": "Shipped",
+      "cancelled": "Cancelled"
+    },
+    "sort": {
+      "mostUpvoted": "Most Upvoted",
+      "newest": "Newest",
+      "oldest": "Oldest"
+    }
+  }
+}

@@ -3,32 +3,40 @@
 import {useEffect, useState, useCallback} from "react";
 import {useParams} from "next/navigation";
 import {useSession} from "next-auth/react";
-import Link from "next/link";
+import {Link} from "@/i18n/navigation";
+import {useTranslations} from "next-intl";
 import {
  BoardWithRequests,
  FeatureRequestWithDetails,
  RequestStatus,
 } from "@/types";
 import {FeatureRequestModal} from "@/components/FeatureRequestModal";
+import {LanguageSwitcher} from "@/components/LanguageSwitcher";
+import { FaChevronUp } from "react-icons/fa6";
 
-const statusOptions = [
- {value: "ALL", label: "All", color: "badge-ghost"},
- {value: "NEW", label: "New", color: "badge-info"},
- {value: "IN_PROGRESS", label: "In Progress", color: "badge-warning"},
- {value: "SHIPPED", label: "Shipped", color: "badge-success"},
- {value: "CANCELLED", label: "Cancelled", color: "badge-error"},
-];
+// Status options will be translated dynamically in component
 
-const sortOptions = [
- {value: "upvotes", label: "Most Upvoted"},
- {value: "newest", label: "Newest"},
- {value: "oldest", label: "Oldest"},
-];
+// Sort options will be translated dynamically in component
 
 export default function PublicBoardPage() {
  const params = useParams();
  const slug = params.slug as string;
  const { data: session } = useSession();
+ const t = useTranslations();
+
+ const statusOptions = [
+  {value: "ALL", label: t('publicBoard.status.all'), color: "badge-ghost"},
+  {value: "NEW", label: t('publicBoard.status.new'), color: "badge-info"},
+  {value: "IN_PROGRESS", label: t('publicBoard.status.inProgress'), color: "badge-warning"},
+  {value: "SHIPPED", label: t('publicBoard.status.shipped'), color: "badge-success"},
+  {value: "CANCELLED", label: t('publicBoard.status.cancelled'), color: "badge-error"},
+ ];
+
+ const sortOptions = [
+  {value: "upvotes", label: t('publicBoard.sort.mostUpvoted')},
+  {value: "newest", label: t('publicBoard.sort.newest')},
+  {value: "oldest", label: t('publicBoard.sort.oldest')},
+ ];
 
  const [board, setBoard] = useState<BoardWithRequests | null>(null);
  const [featureRequests, setFeatureRequests] = useState<
@@ -265,13 +273,12 @@ export default function PublicBoardPage() {
        />
       </svg>
      </div>
-     <h1 className="text-2xl font-bold mb-2">Board Not Found</h1>
+     <h1 className="text-2xl font-bold mb-2">{t('publicBoard.boardNotFound')}</h1>
      <p className="text-base-content/70 mb-4">
-      The feedback board you&apos;re looking for doesn&apos;t exist or has been
-      made private.
+      {t('publicBoard.boardNotFoundMessage')}
      </p>
      <Link href="/" className="btn btn-primary">
-      Go Home
+      {t('publicBoard.goHome')}
      </Link>
     </div>
    </div>
@@ -306,14 +313,17 @@ export default function PublicBoardPage() {
        >
         {board.title}
        </h1>
-       <div
-        className="badge badge-sm badge-primary"
-        style={{
-         backgroundColor: themeStyles.primaryColor,
-         borderColor: themeStyles.primaryColor,
-        }}
-       >
-        Public Board
+       <div className="flex items-center gap-3">
+        <LanguageSwitcher />
+        <div
+         className="badge badge-sm badge-primary"
+         style={{
+          backgroundColor: themeStyles.primaryColor,
+          borderColor: themeStyles.primaryColor,
+         }}
+        >
+         {t('board.publicBoard')}
+        </div>
        </div>
       </div>
       {board.description && (
@@ -352,12 +362,12 @@ export default function PublicBoardPage() {
           d="M12 4v16m8-8H4"
          />
         </svg>
-        Submit Request
+        {t('publicBoard.submitRequest')}
        </button>
        <div className="stats shadow-sm bg-base-100">
         <div className="stat py-2 px-4">
          <div className="stat-value text-sm">{featureRequests.length}</div>
-         <div className="stat-desc">Total Requests</div>
+         <div className="stat-desc">{t('publicBoard.totalRequests')}</div>
         </div>
        </div>
       </div>
@@ -374,7 +384,7 @@ export default function PublicBoardPage() {
        <div className="input-group">
         <input
          type="text"
-         placeholder="Search requests..."
+         placeholder={t('publicBoard.searchRequests')}
          className="input input-bordered flex-1"
          value={searchTerm}
          onChange={(e) => setSearchTerm(e.target.value)}
@@ -443,16 +453,16 @@ export default function PublicBoardPage() {
         </svg>
        </div>
        <h3 className="text-xl font-semibold text-base-content mb-2">
-        No feature requests yet
+        {t('publicBoard.noRequestsYet')}
        </h3>
        <p className="text-base-content/70 mb-6">
-        Be the first to suggest a feature for this product!
+        {t('publicBoard.beTheFirst')}
        </p>
        <button
         onClick={() => setShowSubmitForm(true)}
         className="btn btn-primary"
        >
-        Submit First Request
+        {t('publicBoard.submitFirstRequest')}
        </button>
       </div>
      ) : (
@@ -474,19 +484,7 @@ export default function PublicBoardPage() {
              }}
              className="btn btn-ghost btn-sm flex flex-col items-center p-2 hover:bg-primary/10"
             >
-             <svg
-              className="w-5 h-5 mb-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-             >
-              <path
-               strokeLinecap="round"
-               strokeLinejoin="round"
-               strokeWidth={2}
-               d="M5 15l7-7 7 7"
-              />
-             </svg>
+             <FaChevronUp className="w-5 h-5 mb-1" />
              <span className="text-xs font-bold">{request.upvote_count}</span>
             </button>
            </div>
@@ -508,7 +506,7 @@ export default function PublicBoardPage() {
 
             <div className="flex items-center gap-4 text-sm text-base-content/60">
              <span>
-              By {request.submitter_name || "Anonymous"} •{" "}
+              {request.submitter_name ? `By ${request.submitter_name}` : t('publicBoard.byAnonymous')} •{" "}
               {formatDate(request.created_at)}
              </span>
              {request.comment_count > 0 && (
@@ -526,7 +524,7 @@ export default function PublicBoardPage() {
                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                 />
                </svg>
-               {request.comment_count} comments
+               {request.comment_count} {t('publicBoard.comments')}
               </span>
              )}
             </div>
@@ -545,7 +543,7 @@ export default function PublicBoardPage() {
     <div className="modal modal-open">
      <div className="modal-box max-w-2xl">
       <div className="flex items-center justify-between mb-6">
-       <h3 className="font-bold text-lg">Submit Feature Request</h3>
+       <h3 className="font-bold text-lg">{t('publicBoard.submitFeatureRequest')}</h3>
        <button
         onClick={() => setShowSubmitForm(false)}
         className="btn btn-sm btn-circle btn-ghost"
@@ -576,11 +574,11 @@ export default function PublicBoardPage() {
       <form onSubmit={handleSubmitRequest}>
        <div className="form-control mb-4">
         <label className="label">
-         <span className="label-text font-medium">Feature Title *</span>
+         <span className="label-text font-medium">{t('publicBoard.featureTitle')} *</span>
         </label>
         <input
          type="text"
-         placeholder="Briefly describe the feature you'd like"
+         placeholder={t('publicBoard.featureTitlePlaceholder')}
          className="input input-bordered"
          value={submitForm.title}
          onChange={(e) =>
@@ -592,10 +590,10 @@ export default function PublicBoardPage() {
 
        <div className="form-control mb-4">
         <label className="label">
-         <span className="label-text font-medium">Description</span>
+         <span className="label-text font-medium">{t('board.description')}</span>
         </label>
         <textarea
-         placeholder="Provide more details about your feature request..."
+         placeholder={t('publicBoard.descriptionPlaceholder')}
          className="textarea textarea-bordered h-24"
          value={submitForm.description}
          onChange={(e) =>
@@ -607,11 +605,11 @@ export default function PublicBoardPage() {
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="form-control">
          <label className="label">
-          <span className="label-text font-medium">Your Name</span>
+          <span className="label-text font-medium">{t('publicBoard.yourName')}</span>
          </label>
          <input
           type="text"
-          placeholder="Enter your name (optional)"
+          placeholder={t('publicBoard.yourNamePlaceholder')}
           className="input input-bordered"
           value={submitForm.submitterName}
           onChange={(e) =>
@@ -622,11 +620,11 @@ export default function PublicBoardPage() {
 
         <div className="form-control">
          <label className="label">
-          <span className="label-text font-medium">Your Email *</span>
+          <span className="label-text font-medium">{t('publicBoard.yourEmail')} *</span>
          </label>
          <input
           type="email"
-          placeholder="Enter your email"
+          placeholder={t('publicBoard.yourEmailPlaceholder')}
           className="input input-bordered"
           value={submitForm.submitterEmail}
           onChange={(e) =>
@@ -643,7 +641,7 @@ export default function PublicBoardPage() {
          onClick={() => setShowSubmitForm(false)}
          className="btn btn-ghost"
         >
-         Cancel
+         {t('publicBoard.cancel')}
         </button>
         <button
          type="submit"
@@ -655,10 +653,10 @@ export default function PublicBoardPage() {
          {isSubmitting ? (
           <>
            <span className="loading loading-spinner loading-sm"></span>
-           Submitting...
+           {t('publicBoard.submitting')}
           </>
          ) : (
-          "Submit Request"
+          t('publicBoard.submitRequest')
          )}
         </button>
        </div>

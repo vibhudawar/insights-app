@@ -1,0 +1,91 @@
+{
+  "dashboard": {
+    "title": "Panel de Control",
+    "boards": "Tableros",
+    "settings": "Configuración",
+    "analytics": "Análisis"
+  },
+  "board": {
+    "title": "Título del Tablero",
+    "description": "Descripción",
+    "publicBoard": "Tablero Público", 
+    "editBoard": "Editar Tablero",
+    "deleteBoard": "Eliminar Tablero",
+    "boardNotFound": "Tablero No Encontrado",
+    "backToDashboard": "Volver al Panel",
+    "saveChanges": "Guardar Cambios",
+    "savingChanges": "Guardando Cambios...",
+    "boardUpdated": "¡Tablero actualizado exitosamente!",
+    "boardDeleted": "¡Tablero eliminado exitosamente!",
+    "failedToUpdate": "Error al actualizar el tablero. Por favor, inténtelo de nuevo.",
+    "failedToDelete": "Error al eliminar el tablero. Por favor, inténtelo de nuevo.",
+    "confirmDelete": "¿Está seguro de que desea eliminar \"{title}\"? Esta acción no se puede deshacer y eliminará todas las solicitudes de funciones asociadas con este tablero.",
+    "boardUrl": "URL del Tablero",
+    "onlyLowercase": "Solo letras minúsculas, números y guiones",
+    "allowPublicSubmissions": "Permitir que cualquiera vea y envíe solicitudes de funciones"
+  },
+  "theme": {
+    "customization": "Personalización del Tema",
+    "primaryColor": "Color Principal",
+    "backgroundColor": "Color de Fondo",
+    "textColor": "Color del Texto", 
+    "reset": "Restablecer",
+    "showPreview": "Mostrar Vista Previa",
+    "hidePreview": "Ocultar Vista Previa",
+    "livePreview": "Vista Previa en Vivo"
+  },
+  "form": {
+    "required": "*",
+    "placeholder": {
+      "boardTitle": "Ingrese el título del tablero",
+      "description": "Describa para qué es este tablero...",
+      "boardSlug": "slug-del-tablero"
+    }
+  },
+  "navigation": {
+    "viewPublicBoard": "Ver Tablero Público"
+  },
+  "dangerZone": "Zona de Peligro",
+  "language": {
+    "switchLanguage": "Cambiar Idioma",
+    "english": "Inglés",
+    "french": "Francés",
+    "spanish": "Español",
+    "german": "Alemán"
+  },
+  "publicBoard": {
+    "submitRequest": "Enviar Solicitud",
+    "totalRequests": "Total de Solicitudes",
+    "searchRequests": "Buscar solicitudes...",
+    "noRequestsYet": "Aún no hay solicitudes de funciones",
+    "beTheFirst": "¡Sé el primero en sugerir una función para este producto!",
+    "submitFirstRequest": "Enviar Primera Solicitud",
+    "submitFeatureRequest": "Enviar Solicitud de Función",
+    "featureTitle": "Título de la Función",
+    "featureTitlePlaceholder": "Describe brevemente la función que te gustaría",
+    "descriptionPlaceholder": "Proporciona más detalles sobre tu solicitud de función...",
+    "yourName": "Tu Nombre",
+    "yourNamePlaceholder": "Ingresa tu nombre (opcional)",
+    "yourEmail": "Tu Email",
+    "yourEmailPlaceholder": "Ingresa tu email",
+    "cancel": "Cancelar",
+    "submitting": "Enviando...",
+    "comments": "comentarios",
+    "boardNotFound": "Tablero No Encontrado",
+    "boardNotFoundMessage": "El tablero de comentarios que buscas no existe o se ha hecho privado.",
+    "goHome": "Ir a Inicio",
+    "byAnonymous": "Por Anónimo",
+    "status": {
+      "all": "Todos",
+      "new": "Nuevo",
+      "inProgress": "En Progreso",
+      "shipped": "Enviado",
+      "cancelled": "Cancelado"
+    },
+    "sort": {
+      "mostUpvoted": "Más Votado",
+      "newest": "Más Reciente",
+      "oldest": "Más Antiguo"
+    }
+  }
+}

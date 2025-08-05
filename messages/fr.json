@@ -1,0 +1,91 @@
+{
+  "dashboard": {
+    "title": "Tableau de Bord",
+    "boards": "Tableaux",
+    "settings": "Paramètres",
+    "analytics": "Analyses"
+  },
+  "board": {
+    "title": "Titre du Tableau",
+    "description": "Description",
+    "publicBoard": "Tableau Public",
+    "editBoard": "Modifier le Tableau",
+    "deleteBoard": "Supprimer le Tableau",
+    "boardNotFound": "Tableau Introuvable",
+    "backToDashboard": "Retour au Tableau de Bord",
+    "saveChanges": "Enregistrer les Modifications",
+    "savingChanges": "Enregistrement...",
+    "boardUpdated": "Tableau mis à jour avec succès !",
+    "boardDeleted": "Tableau supprimé avec succès !",
+    "failedToUpdate": "Échec de la mise à jour du tableau. Veuillez réessayer.",
+    "failedToDelete": "Échec de la suppression du tableau. Veuillez réessayer.",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer \"{title}\" ? Cette action ne peut pas être annulée et supprimera toutes les demandes de fonctionnalités associées à ce tableau.",
+    "boardUrl": "URL du Tableau",
+    "onlyLowercase": "Uniquement des lettres minuscules, des chiffres et des tirets",
+    "allowPublicSubmissions": "Permettre à quiconque de voir et soumettre des demandes de fonctionnalités"
+  },
+  "theme": {
+    "customization": "Personnalisation du Thème",
+    "primaryColor": "Couleur Principale",
+    "backgroundColor": "Couleur d'Arrière-plan",
+    "textColor": "Couleur du Texte",
+    "reset": "Réinitialiser",
+    "showPreview": "Afficher l'Aperçu",
+    "hidePreview": "Masquer l'Aperçu",
+    "livePreview": "Aperçu en Direct"
+  },
+  "form": {
+    "required": "*",
+    "placeholder": {
+      "boardTitle": "Entrez le titre du tableau",
+      "description": "Décrivez à quoi sert ce tableau...",
+      "boardSlug": "slug-du-tableau"
+    }
+  },
+  "navigation": {
+    "viewPublicBoard": "Voir le Tableau Public"
+  },
+  "dangerZone": "Zone de Danger",
+  "language": {
+    "switchLanguage": "Changer de Langue",
+    "english": "Anglais",
+    "french": "Français",
+    "spanish": "Espagnol", 
+    "german": "Allemand"
+  },
+  "publicBoard": {
+    "submitRequest": "Soumettre une Demande",
+    "totalRequests": "Total des Demandes",
+    "searchRequests": "Rechercher des demandes...",
+    "noRequestsYet": "Aucune demande de fonctionnalité pour le moment",
+    "beTheFirst": "Soyez le premier à suggérer une fonctionnalité pour ce produit !",
+    "submitFirstRequest": "Soumettre la Première Demande",
+    "submitFeatureRequest": "Soumettre une Demande de Fonctionnalité",
+    "featureTitle": "Titre de la Fonctionnalité",
+    "featureTitlePlaceholder": "Décrivez brièvement la fonctionnalité que vous souhaitez",
+    "descriptionPlaceholder": "Fournissez plus de détails sur votre demande de fonctionnalité...",
+    "yourName": "Votre Nom",
+    "yourNamePlaceholder": "Entrez votre nom (optionnel)",
+    "yourEmail": "Votre Email",
+    "yourEmailPlaceholder": "Entrez votre email",
+    "cancel": "Annuler",
+    "submitting": "Envoi en cours...",
+    "comments": "commentaires",
+    "boardNotFound": "Tableau Introuvable",
+    "boardNotFoundMessage": "Le tableau de commentaires que vous recherchez n'existe pas ou a été rendu privé.",
+    "goHome": "Accueil",
+    "byAnonymous": "Par Anonyme",
+    "status": {
+      "all": "Tous",
+      "new": "Nouveau",
+      "inProgress": "En Cours",
+      "shipped": "Livré",
+      "cancelled": "Annulé"
+    },
+    "sort": {
+      "mostUpvoted": "Plus Voté",
+      "newest": "Plus Récent",
+      "oldest": "Plus Ancien"
+    }
+  }
+}
