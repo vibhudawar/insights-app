@@ -75,6 +75,7 @@ model Board {
   creator          User             @relation(fields: [creator_id], references: [id], onDelete: Cascade)
   feature_requests FeatureRequest[]
   
+  @@index([creator_id])
   @@map("boards")
 }
 
@@ -96,6 +97,12 @@ model FeatureRequest {
   upvotes  Upvote[]
   comments Comment[]
   
+  @@index([board_id])
+  @@index([status])
+  @@index([created_at])
+  @@index([upvote_count])
+  @@index([board_id, status])
+  @@index([board_id, upvote_count])
   @@map("feature_requests")
 }
 
@@ -109,6 +116,8 @@ model Upvote {
   feature_request FeatureRequest @relation(fields: [feature_request_id], references: [id], onDelete: Cascade)
   
   @@unique([feature_request_id, user_identifier])
+  @@index([feature_request_id])
+  @@index([user_identifier])
   @@map("upvotes")
 }
 

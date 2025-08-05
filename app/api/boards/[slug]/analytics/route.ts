@@ -24,13 +24,12 @@ export async function GET(
         slug: resolvedParams.slug,
         creator_id: session.user.id 
       },
-      include: {
-        feature_requests: {
-          include: {
-            upvotes: true,
-            comments: true,
-          },
-        },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        created_at: true,
+        is_public: true,
       },
     });
 
@@ -41,18 +40,30 @@ export async function GET(
       );
     }
 
-    // Calculate analytics data
-    const totalRequests = board.feature_requests.length;
-    const totalUpvotes = board.feature_requests.reduce(
-      (sum, request) => sum + request.upvote_count,
-      0
-    );
-    const totalComments = board.feature_requests.reduce(
-      (sum, request) => sum + request.comment_count,
-      0
-    );
+    // Use database aggregation for better performance
+    const [totalStats, statusBreakdownResult] = await Promise.all([
+      // Get total counts using aggregation
+      prisma.featureRequest.aggregate({
+        where: { board_id: board.id },
+        _count: { id: true },
+        _sum: { 
+          upvote_count: true,
+          comment_count: true,
+        },
+      }),
+      // Get status breakdown using groupBy
+      prisma.featureRequest.groupBy({
+        by: ['status'],
+        where: { board_id: board.id },
+        _count: { id: true },
+      }),
+    ]);
 
-    // Status breakdown
+    const totalRequests = totalStats._count.id;
+    const totalUpvotes = totalStats._sum.upvote_count || 0;
+    const totalComments = totalStats._sum.comment_count || 0;
+
+    // Format status breakdown
     const statusBreakdown = {
       NEW: 0,
       IN_PROGRESS: 0,
@@ -60,8 +71,8 @@ export async function GET(
       CANCELLED: 0,
     };
 
-    board.feature_requests.forEach((request) => {
-      statusBreakdown[request.status as keyof typeof statusBreakdown]++;
+    statusBreakdownResult.forEach((item) => {
+      statusBreakdown[item.status as keyof typeof statusBreakdown] = item._count.id;
     });
 
     // Recent activity (last 30 days)
@@ -81,18 +92,20 @@ export async function GET(
       LIMIT 30
     ` as { date: Date; requests_count: bigint; upvotes_count: bigint }[];
 
-    // Top requests by upvotes
-    const topRequests = board.feature_requests
-      .sort((a, b) => b.upvote_count - a.upvote_count)
-      .slice(0, 10)
-      .map((request) => ({
-        id: request.id,
-        title: request.title,
-        upvote_count: request.upvote_count,
-        comment_count: request.comment_count,
-        status: request.status,
-        created_at: request.created_at,
-      }));
+    // Top requests by upvotes - use database query instead of JavaScript sorting
+    const topRequests = await prisma.featureRequest.findMany({
+      where: { board_id: board.id },
+      select: {
+        id: true,
+        title: true,
+        upvote_count: true,
+        comment_count: true,
+        status: true,
+        created_at: true,
+      },
+      orderBy: { upvote_count: 'desc' },
+      take: 10,
+    });
 
     // Format recent activity for chart
     const formattedActivity = recentActivity.map(item => ({

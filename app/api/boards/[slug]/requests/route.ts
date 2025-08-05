@@ -66,9 +66,10 @@ export async function GET(
       user_identifier: true,
      },
     },
-    comments: {
+    _count: {
      select: {
-      id: true,
+      upvotes: true,
+      comments: true,
      },
     },
    },

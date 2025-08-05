@@ -3,6 +3,7 @@
 import {useState, useEffect} from "react";
 import {useSession, signOut} from "next-auth/react";
 import {DashboardLayout} from "@/components/layout/DashboardLayout";
+import {Link} from "@/i18n/navigation";
 import Image from "next/image";
 
 export default function SettingsPage() {
@@ -77,7 +78,7 @@ export default function SettingsPage() {
    } else {
     throw new Error("Failed to update profile");
    }
-  } catch (error) {
+  } catch {
    showMessage("Failed to update profile. Please try again.", "error");
   } finally {
    setIsSaving(false);
@@ -102,7 +103,7 @@ export default function SettingsPage() {
    } else {
     throw new Error("Failed to update settings");
    }
-  } catch (error) {
+  } catch {
    showMessage("Failed to update settings. Please try again.", "error");
   } finally {
    setIsSaving(false);
@@ -129,7 +130,7 @@ export default function SettingsPage() {
    } else {
     throw new Error("Failed to delete account");
    }
-  } catch (error) {
+  } catch {
    showMessage("Failed to delete account. Please try again.", "error");
   } finally {
    setIsLoading(false);
@@ -146,7 +147,7 @@ export default function SettingsPage() {
       <div className="breadcrumbs text-sm">
        <ul>
         <li>
-         <a href="/dashboard">Dashboard</a>
+         <Link href="/dashboard">Dashboard</Link>
         </li>
         <li>Settings</li>
        </ul>

@@ -9,7 +9,15 @@ export async function GET(
   const resolvedParams = await params;
   const board = await prisma.board.findUnique({
    where: {slug: resolvedParams.slug},
-   include: {
+   select: {
+    id: true,
+    title: true,
+    description: true,
+    slug: true,
+    theme_config: true,
+    is_public: true,
+    created_at: true,
+    creator_id: true,
     creator: {
      select: {
       id: true,
@@ -18,19 +26,10 @@ export async function GET(
       image: true,
      },
     },
-    feature_requests: {
+    _count: {
      select: {
-      id: true,
-      title: true,
-      status: true,
-      upvote_count: true,
-      comment_count: true,
-      created_at: true,
+      feature_requests: true,
      },
-     orderBy: {
-      upvote_count: "desc",
-     },
-     take: 10, // Limit for basic board info
     },
    },
   });

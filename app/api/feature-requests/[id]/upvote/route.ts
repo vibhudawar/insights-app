@@ -17,10 +17,22 @@ export async function POST(
    );
   }
 
-  // Check if feature request exists
-  const featureRequest = await prisma.featureRequest.findUnique({
-   where: {id: resolvedParams.id},
-  });
+  // Check if feature request exists and get existing upvote in parallel
+  const [featureRequest, existingUpvote] = await Promise.all([
+   prisma.featureRequest.findUnique({
+    where: { id: resolvedParams.id },
+    select: { id: true }, // Only need id for existence check
+   }),
+   prisma.upvote.findUnique({
+    where: {
+     feature_request_id_user_identifier: {
+      feature_request_id: resolvedParams.id,
+      user_identifier: userIdentifier,
+     },
+    },
+    select: { id: true }, // Only need id for existence check
+   }),
+  ]);
 
   if (!featureRequest) {
    return NextResponse.json(
@@ -28,16 +40,6 @@ export async function POST(
     {status: 404}
    );
   }
-
-  // Check if user has already upvoted
-  const existingUpvote = await prisma.upvote.findUnique({
-   where: {
-    feature_request_id_user_identifier: {
-     feature_request_id: resolvedParams.id,
-     user_identifier: userIdentifier,
-    },
-   },
-  });
 
   if (existingUpvote) {
    // Remove upvote (toggle off)

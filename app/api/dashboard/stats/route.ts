@@ -15,50 +15,32 @@ export async function GET() {
       );
     }
 
-    // Get all boards for the user
-    const boards = await prisma.board.findMany({
-      where: {
-        creator_id: session.user.id,
-      },
-      include: {
-        feature_requests: {
-          include: {
-            upvotes: true,
-          },
-        },
-      },
-    });
-
-    // Calculate stats
-    const totalBoards = boards.length;
-    let totalRequests = 0;
-    let totalUpvotes = 0;
-    let activeBoards = 0;
-
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    boards.forEach((board) => {
-      totalRequests += board.feature_requests.length;
-      
-      board.feature_requests.forEach((request) => {
-        totalUpvotes += request.upvotes.length;
-      });
+    // Use efficient SQL aggregation instead of loading all data in memory
+    const statsResult = await prisma.$queryRaw<Array<{
+      total_boards: bigint;
+      total_requests: bigint;
+      total_upvotes: bigint;
+      active_boards: bigint;
+    }>>`
+      SELECT 
+        COUNT(DISTINCT b.id) as total_boards,
+        COUNT(fr.id) as total_requests,
+        COALESCE(SUM(fr.upvote_count), 0) as total_upvotes,
+        COUNT(DISTINCT CASE WHEN fr.created_at > ${thirtyDaysAgo} THEN b.id END) as active_boards
+      FROM boards b
+      LEFT JOIN feature_requests fr ON b.id = fr.board_id
+      WHERE b.creator_id = ${session.user.id}
+    `;
 
-      // Check if board is active (has requests in last 30 days)
-      const hasRecentActivity = board.feature_requests.some(
-        (request) => request.created_at > thirtyDaysAgo
-      );
-      if (hasRecentActivity) {
-        activeBoards++;
-      }
-    });
-
+    const result = statsResult[0];
     const stats: DashboardStats = {
-      totalBoards,
-      totalRequests,
-      totalUpvotes,
-      activeBoards,
+      totalBoards: Number(result.total_boards),
+      totalRequests: Number(result.total_requests),
+      totalUpvotes: Number(result.total_upvotes),
+      activeBoards: Number(result.active_boards),
     };
 
     return NextResponse.json({
