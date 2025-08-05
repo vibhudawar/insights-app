@@ -1,6 +1,7 @@
 import {NextRequest, NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
 import {CreateFeatureRequestFormData} from "@/types";
+import { revalidateFeatureRequests, CACHE_TAGS } from "@/lib/cache";
 
 export async function GET(
  request: NextRequest,
@@ -76,10 +77,20 @@ export async function GET(
    orderBy,
   });
 
-  return NextResponse.json({
+  const response = NextResponse.json({
    success: true,
    data: featureRequests,
   });
+
+  // Cache feature requests for 30 seconds, stale-while-revalidate for 5 minutes
+  // Short cache because this data changes frequently with upvotes/comments
+  response.headers.set(
+    'Cache-Control',
+    'public, s-maxage=30, stale-while-revalidate=300'
+  );
+  response.headers.set('Cache-Tag', `${CACHE_TAGS.FEATURE_REQUESTS}-${resolvedParams.slug}`);
+
+  return response;
  } catch (error) {
   console.error("Feature requests fetch error:", error);
   return NextResponse.json(
@@ -144,6 +155,9 @@ export async function POST(
     comments: true,
    },
   });
+
+  // Revalidate feature request cache after creating new request
+  revalidateFeatureRequests(resolvedParams.slug, board.creator_id);
 
   return NextResponse.json({
    success: true,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidateFeatureRequests } from "@/lib/cache";
 
 export async function PUT(
   request: NextRequest,
@@ -71,6 +72,9 @@ export async function PUT(
         comments: true,
       },
     });
+
+    // Revalidate feature request cache after status update
+    revalidateFeatureRequests(updatedFeatureRequest.board.slug, session.user.id);
 
     return NextResponse.json({
       success: true,

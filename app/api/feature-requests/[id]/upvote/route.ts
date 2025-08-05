@@ -1,5 +1,7 @@
 import {NextRequest, NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
+import { revalidateFeatureRequests } from "@/lib/cache";
+import { memoizedFindFeatureRequest, memoizedFindUpvote } from "@/lib/request-memoization";
 
 export async function POST(
  request: NextRequest,
@@ -17,21 +19,10 @@ export async function POST(
    );
   }
 
-  // Check if feature request exists and get existing upvote in parallel
+  // Check if feature request exists and get existing upvote in parallel using memoized functions
   const [featureRequest, existingUpvote] = await Promise.all([
-   prisma.featureRequest.findUnique({
-    where: { id: resolvedParams.id },
-    select: { id: true }, // Only need id for existence check
-   }),
-   prisma.upvote.findUnique({
-    where: {
-     feature_request_id_user_identifier: {
-      feature_request_id: resolvedParams.id,
-      user_identifier: userIdentifier,
-     },
-    },
-    select: { id: true }, // Only need id for existence check
-   }),
+   memoizedFindFeatureRequest(resolvedParams.id),
+   memoizedFindUpvote(resolvedParams.id, userIdentifier),
   ]);
 
   if (!featureRequest) {
@@ -57,6 +48,11 @@ export async function POST(
     }),
    ]);
 
+   // Revalidate feature request cache after upvote change
+   if (featureRequest.board) {
+    revalidateFeatureRequests(featureRequest.board.slug, featureRequest.board.creator_id);
+   }
+
    return NextResponse.json({
     success: true,
     data: {upvoted: false},
@@ -80,6 +76,11 @@ export async function POST(
      },
     }),
    ]);
+
+   // Revalidate feature request cache after upvote change
+   if (featureRequest.board) {
+    revalidateFeatureRequests(featureRequest.board.slug, featureRequest.board.creator_id);
+   }
 
    return NextResponse.json({
     success: true,

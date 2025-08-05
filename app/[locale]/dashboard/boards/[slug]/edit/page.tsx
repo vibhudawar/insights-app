@@ -136,7 +136,7 @@ export default function EditBoardPage() {
  const handleDeleteBoard = async () => {
   if (
    !window.confirm(
-    t('board.confirmDelete', {title: board?.title})
+    t('board.confirmDelete', {title: board?.title || ''})
    )
   ) {
    return;

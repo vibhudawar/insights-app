@@ -1,5 +1,6 @@
 import {NextRequest, NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
+import { CACHE_TAGS } from "@/lib/cache";
 
 export async function GET(
  request: NextRequest,
@@ -49,10 +50,19 @@ export async function GET(
    );
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
    success: true,
    data: board,
   });
+
+  // Cache public board data for 5 minutes, stale-while-revalidate for 1 hour
+  response.headers.set(
+    'Cache-Control',
+    'public, s-maxage=300, stale-while-revalidate=3600'
+  );
+  response.headers.set('Cache-Tag', `${CACHE_TAGS.BOARD_DETAILS}-${resolvedParams.slug}`);
+
+  return response;
  } catch (error) {
   console.error("Board fetch error:", error);
   return NextResponse.json(

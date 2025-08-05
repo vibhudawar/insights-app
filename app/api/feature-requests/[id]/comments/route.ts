@@ -1,6 +1,8 @@
 import {NextRequest, NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
 import {CreateCommentFormData} from "@/types";
+import { revalidateComments } from "@/lib/cache";
+import { memoizedFindFeatureRequest } from "@/lib/request-memoization";
 
 export async function GET(
  request: NextRequest,
@@ -8,10 +10,8 @@ export async function GET(
 ) {
  try {
   const resolvedParams = await params;
-  // Check if feature request exists
-  const featureRequest = await prisma.featureRequest.findUnique({
-   where: {id: resolvedParams.id},
-  });
+  // Check if feature request exists using memoized function
+  const featureRequest = await memoizedFindFeatureRequest(resolvedParams.id);
 
   if (!featureRequest) {
    return NextResponse.json(
@@ -34,10 +34,20 @@ export async function GET(
    orderBy: {created_at: "desc"},
   });
 
-  return NextResponse.json({
+  const response = NextResponse.json({
    success: true,
    data: comments,
   });
+
+  // Cache comments for 2 minutes, stale-while-revalidate for 10 minutes
+  // Comments change less frequently than upvotes but more than board data
+  response.headers.set(
+    'Cache-Control',
+    'public, s-maxage=120, stale-while-revalidate=600'
+  );
+  response.headers.set('Cache-Tag', `comments-${resolvedParams.id}`);
+
+  return response;
  } catch (error) {
   console.error("Comments fetch error:", error);
   return NextResponse.json(
@@ -53,10 +63,8 @@ export async function POST(
 ) {
  try {
   const resolvedParams = await params;
-  // Check if feature request exists
-  const featureRequest = await prisma.featureRequest.findUnique({
-   where: {id: resolvedParams.id},
-  });
+  // Check if feature request exists using memoized function
+  const featureRequest = await memoizedFindFeatureRequest(resolvedParams.id);
 
   if (!featureRequest) {
    return NextResponse.json(
@@ -108,6 +116,11 @@ export async function POST(
 
    return newComment;
   });
+
+  // Revalidate related caches after comment is added
+  if (featureRequest?.board) {
+    revalidateComments(resolvedParams.id, featureRequest.board.slug, featureRequest.board.creator_id);
+  }
 
   return NextResponse.json({
    success: true,

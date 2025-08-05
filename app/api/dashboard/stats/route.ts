@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { DashboardStats } from "@/types";
+import { CACHE_TAGS } from "@/lib/cache";
+import { getCachedDashboardStats } from "@/lib/cached-queries";
 
 export async function GET() {
   try {
@@ -15,38 +15,22 @@ export async function GET() {
       );
     }
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Use cached query for better performance
+    const stats = await getCachedDashboardStats(session.user.id);
 
-    // Use efficient SQL aggregation instead of loading all data in memory
-    const statsResult = await prisma.$queryRaw<Array<{
-      total_boards: bigint;
-      total_requests: bigint;
-      total_upvotes: bigint;
-      active_boards: bigint;
-    }>>`
-      SELECT 
-        COUNT(DISTINCT b.id) as total_boards,
-        COUNT(fr.id) as total_requests,
-        COALESCE(SUM(fr.upvote_count), 0) as total_upvotes,
-        COUNT(DISTINCT CASE WHEN fr.created_at > ${thirtyDaysAgo} THEN b.id END) as active_boards
-      FROM boards b
-      LEFT JOIN feature_requests fr ON b.id = fr.board_id
-      WHERE b.creator_id = ${session.user.id}
-    `;
-
-    const result = statsResult[0];
-    const stats: DashboardStats = {
-      totalBoards: Number(result.total_boards),
-      totalRequests: Number(result.total_requests),
-      totalUpvotes: Number(result.total_upvotes),
-      activeBoards: Number(result.active_boards),
-    };
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: stats,
     });
+
+    // Cache dashboard stats for 5 minutes, stale-while-revalidate for 15 minutes
+    response.headers.set(
+      'Cache-Control',
+      'private, s-maxage=300, stale-while-revalidate=900'
+    );
+    response.headers.set('Cache-Tag', `${CACHE_TAGS.DASHBOARD_STATS}-${session.user.id}`);
+
+    return response;
   } catch (error) {
     console.error("Dashboard stats error:", error);
     return NextResponse.json(

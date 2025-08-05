@@ -116,14 +116,24 @@ export default function PublicBoardPage() {
   }
  }, [slug]);
 
- const fetchFeatureRequests = useCallback(async () => {
+ const fetchFeatureRequests = useCallback(async (bypassCache = false) => {
   try {
    const params = new URLSearchParams();
    if (selectedStatus !== "ALL") params.append("status", selectedStatus);
    if (searchTerm) params.append("search", searchTerm);
    params.append("sortBy", sortBy);
 
-   const response = await fetch(`/api/boards/${slug}/requests?${params}`);
+   const fetchOptions: RequestInit = {};
+   if (bypassCache) {
+    // Force fresh data by bypassing cache
+    fetchOptions.cache = 'no-store';
+    fetchOptions.headers = {
+     'Cache-Control': 'no-cache',
+     'Pragma': 'no-cache'
+    };
+   }
+
+   const response = await fetch(`/api/boards/${slug}/requests?${params}`, fetchOptions);
    if (response.ok) {
     const data = await response.json();
     setFeatureRequests(data.data || []);
@@ -159,36 +169,71 @@ export default function PublicBoardPage() {
   setIsSubmitting(true);
   setSubmitError("");
 
+  // Store form data before clearing
+  const requestData = {
+   title: submitForm.title,
+   description: submitForm.description,
+   submitterName: submitForm.submitterName,
+   submitterEmail: submitForm.submitterEmail,
+  };
+
+  // Optimistic update - immediately add to UI
+  const optimisticRequest: FeatureRequestWithDetails = {
+    id: `temp-${Date.now()}`,
+    board_id: board?.id || '',
+    submitter_email: requestData.submitterEmail,
+    submitter_name: requestData.submitterName,
+    title: requestData.title,
+    description: requestData.description,
+    status: 'NEW' as const,
+    upvote_count: 0,
+    comment_count: 0,
+    created_at: new Date(),
+    updated_at: new Date(),
+    upvotes: [],
+    board: board!,
+    comments: []
+  };
+
+  // Add optimistic request to the list
+  setFeatureRequests(prev => [optimisticRequest, ...prev]);
+  
+  // Clear form and close modal immediately for better UX
+  setSubmitForm({
+   title: "",
+   description: "",
+   submitterName: "",
+   submitterEmail: "",
+  });
+  setShowSubmitForm(false);
+
   try {
    const response = await fetch(`/api/boards/${slug}/requests`, {
     method: "POST",
     headers: {
      "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-     title: submitForm.title,
-     description: submitForm.description,
-     submitterName: submitForm.submitterName,
-     submitterEmail: submitForm.submitterEmail,
-    }),
+    body: JSON.stringify(requestData),
    });
 
    const result = await response.json();
 
    if (result.success) {
-    setSubmitForm({
-     title: "",
-     description: "",
-     submitterName: "",
-     submitterEmail: "",
-    });
-    setShowSubmitForm(false);
-    fetchFeatureRequests(); // Refresh the list
+    // Replace optimistic request with real data
+    fetchFeatureRequests(true); // Refresh the list with cache bypass
    } else {
+    // Remove optimistic request on error and restore form
+    setFeatureRequests(prev => prev.filter(req => req.id !== optimisticRequest.id));
+    setSubmitForm(requestData); // Restore form data
     setSubmitError(result.error || "Failed to submit request");
+    setShowSubmitForm(true); // Reopen form to let user retry
    }
   } catch {
+   // Remove optimistic request on network error and restore form
+   setFeatureRequests(prev => prev.filter(req => req.id !== optimisticRequest.id));
+   setSubmitForm(requestData); // Restore form data
    setSubmitError("An error occurred. Please try again.");
+   setShowSubmitForm(true); // Reopen form to let user retry
   } finally {
    setIsSubmitting(false);
   }
@@ -222,7 +267,7 @@ export default function PublicBoardPage() {
      return newSet;
     });
 
-    fetchFeatureRequests(); // Refresh to show updated counts
+    fetchFeatureRequests(true); // Refresh to show updated counts with cache bypass
    }
   } catch (error) {
    console.error("Error toggling upvote:", error);

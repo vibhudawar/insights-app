@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidateBoard, revalidateUserCache } from "@/lib/cache";
 
 export async function PUT(
   request: NextRequest,
@@ -95,6 +96,9 @@ export async function PUT(
       },
     });
 
+    // Revalidate board cache after update
+    revalidateBoard(resolvedParams.slug, session.user.id);
+
     return NextResponse.json({
       success: true,
       data: updatedBoard,
@@ -144,6 +148,9 @@ export async function DELETE(
       where: { id: existingBoard.id },
     });
 
+    // Revalidate user cache after board deletion
+    revalidateUserCache(session.user.id);
+    
     return NextResponse.json({
       success: true,
       message: "Board deleted successfully",

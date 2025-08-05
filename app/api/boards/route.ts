@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CreateBoardFormData } from "@/types";
+import { revalidateUserCache, CACHE_TAGS } from "@/lib/cache";
+import { getCachedUserBoards } from "@/lib/cached-queries";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,40 +21,22 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get("limit");
     const limitNumber = limit ? parseInt(limit, 10) : undefined;
 
-    const boards = await prisma.board.findMany({
-      where: {
-        creator_id: session.user.id,
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
-        feature_requests: {
-          select: {
-            id: true,
-            title: true,
-            status: true,
-            upvote_count: true,
-            comment_count: true,
-            created_at: true,
-          },
-        },
-      },
-      orderBy: {
-        updated_at: "desc",
-      },
-      take: limitNumber,
-    });
+    // Use cached query for better performance
+    const boards = await getCachedUserBoards(session.user.id, limitNumber);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: boards,
     });
+
+    // Cache for 60 seconds, stale-while-revalidate for 300 seconds
+    response.headers.set(
+      'Cache-Control',
+      'private, s-maxage=60, stale-while-revalidate=300'
+    );
+    response.headers.set('Cache-Tag', `${CACHE_TAGS.USER_BOARDS}-${session.user.id}`);
+
+    return response;
   } catch (error) {
     console.error("Boards fetch error:", error);
     return NextResponse.json(
@@ -119,6 +103,9 @@ export async function POST(request: NextRequest) {
         feature_requests: true,
       },
     });
+
+    // Revalidate user's board cache after creating new board
+    revalidateUserCache(session.user.id);
 
     return NextResponse.json({
       success: true,
