@@ -12,7 +12,7 @@ import {
 } from "@/types";
 import {FeatureRequestModal} from "@/components/FeatureRequestModal";
 import {LanguageSwitcher} from "@/components/LanguageSwitcher";
-import { FaChevronUp } from "react-icons/fa6";
+import {FaChevronUp} from "react-icons/fa6";
 
 // Status options will be translated dynamically in component
 
@@ -21,21 +21,33 @@ import { FaChevronUp } from "react-icons/fa6";
 export default function PublicBoardPage() {
  const params = useParams();
  const slug = params.slug as string;
- const { data: session } = useSession();
+ const {data: session} = useSession();
  const t = useTranslations();
 
  const statusOptions = [
-  {value: "ALL", label: t('publicBoard.status.all'), color: "badge-ghost"},
-  {value: "NEW", label: t('publicBoard.status.new'), color: "badge-info"},
-  {value: "IN_PROGRESS", label: t('publicBoard.status.inProgress'), color: "badge-warning"},
-  {value: "SHIPPED", label: t('publicBoard.status.shipped'), color: "badge-success"},
-  {value: "CANCELLED", label: t('publicBoard.status.cancelled'), color: "badge-error"},
+  {value: "ALL", label: t("publicBoard.status.all"), color: "badge-ghost"},
+  {value: "NEW", label: t("publicBoard.status.new"), color: "badge-info"},
+  {
+   value: "IN_PROGRESS",
+   label: t("publicBoard.status.inProgress"),
+   color: "badge-warning",
+  },
+  {
+   value: "SHIPPED",
+   label: t("publicBoard.status.shipped"),
+   color: "badge-success",
+  },
+  {
+   value: "CANCELLED",
+   label: t("publicBoard.status.cancelled"),
+   color: "badge-error",
+  },
  ];
 
  const sortOptions = [
-  {value: "upvotes", label: t('publicBoard.sort.mostUpvoted')},
-  {value: "newest", label: t('publicBoard.sort.newest')},
-  {value: "oldest", label: t('publicBoard.sort.oldest')},
+  {value: "upvotes", label: t("publicBoard.sort.mostUpvoted")},
+  {value: "newest", label: t("publicBoard.sort.newest")},
+  {value: "oldest", label: t("publicBoard.sort.oldest")},
  ];
 
  const [board, setBoard] = useState<BoardWithRequests | null>(null);
@@ -63,6 +75,9 @@ export default function PublicBoardPage() {
 
  // User identifier for upvoting (stored in localStorage)
  const [userIdentifier, setUserIdentifier] = useState("");
+
+ // Add this new state to track which requests are upvoted by current user
+ const [upvotedRequests, setUpvotedRequests] = useState<Set<string>>(new Set());
 
  // Modal state
  const [selectedRequest, setSelectedRequest] =
@@ -112,11 +127,26 @@ export default function PublicBoardPage() {
    if (response.ok) {
     const data = await response.json();
     setFeatureRequests(data.data || []);
+
+    // Update upvoted requests set based on user identifier
+    if (userIdentifier) {
+     const upvotedSet = new Set<string>();
+     data.data?.forEach((request: FeatureRequestWithDetails) => {
+      const hasUpvoted = request.upvotes?.some(
+       (upvote: {user_identifier: string}) =>
+        upvote.user_identifier === userIdentifier
+      );
+      if (hasUpvoted) {
+       upvotedSet.add(request.id);
+      }
+     });
+     setUpvotedRequests(upvotedSet);
+    }
    }
   } catch (error) {
    console.error("Error fetching feature requests:", error);
   }
- }, [slug, selectedStatus, searchTerm, sortBy]);
+ }, [slug, selectedStatus, searchTerm, sortBy, userIdentifier]);
 
  useEffect(() => {
   if (board) {
@@ -179,6 +209,19 @@ export default function PublicBoardPage() {
    });
 
    if (response.ok) {
+    const result = await response.json();
+
+    // Update local upvoted state immediately
+    setUpvotedRequests((prev) => {
+     const newSet = new Set(prev);
+     if (result.data.upvoted) {
+      newSet.add(requestId);
+     } else {
+      newSet.delete(requestId);
+     }
+     return newSet;
+    });
+
     fetchFeatureRequests(); // Refresh to show updated counts
    }
   } catch (error) {
@@ -198,15 +241,15 @@ export default function PublicBoardPage() {
 
  const handleStatusUpdate = (requestId: string, newStatus: string) => {
   // Update the local state to reflect the change immediately
-  setFeatureRequests(prev => 
-   prev.map(req => 
-    req.id === requestId ? { ...req, status: newStatus as RequestStatus } : req
+  setFeatureRequests((prev) =>
+   prev.map((req) =>
+    req.id === requestId ? {...req, status: newStatus as RequestStatus} : req
    )
   );
-  
+
   // Update the selected request if it's the one being updated
   if (selectedRequest && selectedRequest.id === requestId) {
-   setSelectedRequest({ ...selectedRequest, status: newStatus as RequestStatus });
+   setSelectedRequest({...selectedRequest, status: newStatus as RequestStatus});
   }
  };
 
@@ -273,12 +316,14 @@ export default function PublicBoardPage() {
        />
       </svg>
      </div>
-     <h1 className="text-2xl font-bold mb-2">{t('publicBoard.boardNotFound')}</h1>
+     <h1 className="text-2xl font-bold mb-2">
+      {t("publicBoard.boardNotFound")}
+     </h1>
      <p className="text-base-content/70 mb-4">
-      {t('publicBoard.boardNotFoundMessage')}
+      {t("publicBoard.boardNotFoundMessage")}
      </p>
      <Link href="/" className="btn btn-primary">
-      {t('publicBoard.goHome')}
+      {t("publicBoard.goHome")}
      </Link>
     </div>
    </div>
@@ -322,7 +367,7 @@ export default function PublicBoardPage() {
           borderColor: themeStyles.primaryColor,
          }}
         >
-         {t('board.publicBoard')}
+         {t("board.publicBoard")}
         </div>
        </div>
       </div>
@@ -362,12 +407,12 @@ export default function PublicBoardPage() {
           d="M12 4v16m8-8H4"
          />
         </svg>
-        {t('publicBoard.submitRequest')}
+        {t("publicBoard.submitRequest")}
        </button>
        <div className="stats shadow-sm bg-base-100">
         <div className="stat py-2 px-4">
          <div className="stat-value text-sm">{featureRequests.length}</div>
-         <div className="stat-desc">{t('publicBoard.totalRequests')}</div>
+         <div className="stat-desc">{t("publicBoard.totalRequests")}</div>
         </div>
        </div>
       </div>
@@ -384,7 +429,7 @@ export default function PublicBoardPage() {
        <div className="input-group">
         <input
          type="text"
-         placeholder={t('publicBoard.searchRequests')}
+         placeholder={t("publicBoard.searchRequests")}
          className="input input-bordered flex-1"
          value={searchTerm}
          onChange={(e) => setSearchTerm(e.target.value)}
@@ -453,16 +498,16 @@ export default function PublicBoardPage() {
         </svg>
        </div>
        <h3 className="text-xl font-semibold text-base-content mb-2">
-        {t('publicBoard.noRequestsYet')}
+        {t("publicBoard.noRequestsYet")}
        </h3>
        <p className="text-base-content/70 mb-6">
-        {t('publicBoard.beTheFirst')}
+        {t("publicBoard.beTheFirst")}
        </p>
        <button
         onClick={() => setShowSubmitForm(true)}
         className="btn btn-primary"
        >
-        {t('publicBoard.submitFirstRequest')}
+        {t("publicBoard.submitFirstRequest")}
        </button>
       </div>
      ) : (
@@ -477,16 +522,36 @@ export default function PublicBoardPage() {
           <div className="flex items-start gap-4">
            {/* Upvote Section */}
            <div className="flex flex-col items-center min-w-0">
-            <button
+            <div
              onClick={(e) => {
               e.stopPropagation();
               handleUpvote(request.id);
              }}
-             className="btn btn-ghost btn-sm flex flex-col items-center p-2 hover:bg-primary/10"
+             className={`card card-xs border transition-all cursor-pointer w-16 h-16 ${
+              upvotedRequests.has(request.id)
+               ? "bg-primary border-primary text-primary-content hover:bg-primary/90"
+               : "bg-base-100 border-base-300 hover:border-primary hover:shadow-md"
+             }`}
             >
-             <FaChevronUp className="w-5 h-5 mb-1" />
-             <span className="text-xs font-bold">{request.upvote_count}</span>
-            </button>
+             <div className="card-body p-2 flex flex-col items-center justify-center gap-1">
+              <FaChevronUp
+               className={`w-4 h-4 ${
+                upvotedRequests.has(request.id)
+                 ? "text-primary-content"
+                 : "text-base-content/70"
+               }`}
+              />
+              <span
+               className={`text-sm font-bold ${
+                upvotedRequests.has(request.id)
+                 ? "text-primary-content"
+                 : "text-base-content"
+               }`}
+              >
+               {request.upvote_count}
+              </span>
+             </div>
+            </div>
            </div>
 
            {/* Content */}
@@ -506,8 +571,10 @@ export default function PublicBoardPage() {
 
             <div className="flex items-center gap-4 text-sm text-base-content/60">
              <span>
-              {request.submitter_name ? `By ${request.submitter_name}` : t('publicBoard.byAnonymous')} •{" "}
-              {formatDate(request.created_at)}
+              {request.submitter_name
+               ? `By ${request.submitter_name}`
+               : t("publicBoard.byAnonymous")}{" "}
+              • {formatDate(request.created_at)}
              </span>
              {request.comment_count > 0 && (
               <span className="flex items-center gap-1">
@@ -524,7 +591,7 @@ export default function PublicBoardPage() {
                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                 />
                </svg>
-               {request.comment_count} {t('publicBoard.comments')}
+               {request.comment_count} {t("publicBoard.comments")}
               </span>
              )}
             </div>
@@ -543,7 +610,9 @@ export default function PublicBoardPage() {
     <div className="modal modal-open">
      <div className="modal-box max-w-2xl">
       <div className="flex items-center justify-between mb-6">
-       <h3 className="font-bold text-lg">{t('publicBoard.submitFeatureRequest')}</h3>
+       <h3 className="font-bold text-lg">
+        {t("publicBoard.submitFeatureRequest")}
+       </h3>
        <button
         onClick={() => setShowSubmitForm(false)}
         className="btn btn-sm btn-circle btn-ghost"
@@ -574,11 +643,13 @@ export default function PublicBoardPage() {
       <form onSubmit={handleSubmitRequest}>
        <div className="form-control mb-4">
         <label className="label">
-         <span className="label-text font-medium">{t('publicBoard.featureTitle')} *</span>
+         <span className="label-text font-medium">
+          {t("publicBoard.featureTitle")} *
+         </span>
         </label>
         <input
          type="text"
-         placeholder={t('publicBoard.featureTitlePlaceholder')}
+         placeholder={t("publicBoard.featureTitlePlaceholder")}
          className="input input-bordered"
          value={submitForm.title}
          onChange={(e) =>
@@ -590,10 +661,12 @@ export default function PublicBoardPage() {
 
        <div className="form-control mb-4">
         <label className="label">
-         <span className="label-text font-medium">{t('board.description')}</span>
+         <span className="label-text font-medium">
+          {t("board.description")}
+         </span>
         </label>
         <textarea
-         placeholder={t('publicBoard.descriptionPlaceholder')}
+         placeholder={t("publicBoard.descriptionPlaceholder")}
          className="textarea textarea-bordered h-24"
          value={submitForm.description}
          onChange={(e) =>
@@ -605,11 +678,13 @@ export default function PublicBoardPage() {
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="form-control">
          <label className="label">
-          <span className="label-text font-medium">{t('publicBoard.yourName')}</span>
+          <span className="label-text font-medium">
+           {t("publicBoard.yourName")}
+          </span>
          </label>
          <input
           type="text"
-          placeholder={t('publicBoard.yourNamePlaceholder')}
+          placeholder={t("publicBoard.yourNamePlaceholder")}
           className="input input-bordered"
           value={submitForm.submitterName}
           onChange={(e) =>
@@ -620,11 +695,13 @@ export default function PublicBoardPage() {
 
         <div className="form-control">
          <label className="label">
-          <span className="label-text font-medium">{t('publicBoard.yourEmail')} *</span>
+          <span className="label-text font-medium">
+           {t("publicBoard.yourEmail")} *
+          </span>
          </label>
          <input
           type="email"
-          placeholder={t('publicBoard.yourEmailPlaceholder')}
+          placeholder={t("publicBoard.yourEmailPlaceholder")}
           className="input input-bordered"
           value={submitForm.submitterEmail}
           onChange={(e) =>
@@ -641,7 +718,7 @@ export default function PublicBoardPage() {
          onClick={() => setShowSubmitForm(false)}
          className="btn btn-ghost"
         >
-         {t('publicBoard.cancel')}
+         {t("publicBoard.cancel")}
         </button>
         <button
          type="submit"
@@ -653,10 +730,10 @@ export default function PublicBoardPage() {
          {isSubmitting ? (
           <>
            <span className="loading loading-spinner loading-sm"></span>
-           {t('publicBoard.submitting')}
+           {t("publicBoard.submitting")}
           </>
          ) : (
-          t('publicBoard.submitRequest')
+          t("publicBoard.submitRequest")
          )}
         </button>
        </div>
@@ -673,7 +750,7 @@ export default function PublicBoardPage() {
      onClose={handleCloseModal}
      onUpvote={handleUpvote}
      userIdentifier={userIdentifier}
-     isAdmin={(session?.user as { id?: string })?.id === board?.creator_id}
+     isAdmin={(session?.user as {id?: string})?.id === board?.creator_id}
      onStatusUpdate={handleStatusUpdate}
     />
    )}

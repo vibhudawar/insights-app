@@ -6,6 +6,7 @@ import {
  CommentWithReplies,
  CreateCommentFormData,
 } from "@/types";
+import {FaChevronUp} from "react-icons/fa6";
 
 interface FeatureRequestModalProps {
  request: FeatureRequestWithDetails;
@@ -150,7 +151,7 @@ export function FeatureRequestModal({
 
  const handleStatusUpdate = async () => {
   if (!onStatusUpdate || selectedStatus === request.status) return;
-  
+
   setIsUpdatingStatus(true);
   try {
    const response = await fetch(`/api/feature-requests/${request.id}/status`, {
@@ -158,7 +159,7 @@ export function FeatureRequestModal({
     headers: {
      "Content-Type": "application/json",
     },
-    body: JSON.stringify({ status: selectedStatus }),
+    body: JSON.stringify({status: selectedStatus}),
    });
 
    if (response.ok) {
@@ -210,8 +211,18 @@ export function FeatureRequestModal({
     {isAdmin && (
      <div className="mb-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
       <h4 className="font-semibold mb-3 flex items-center gap-2">
-       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+       <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+       >
+        <path
+         strokeLinecap="round"
+         strokeLinejoin="round"
+         strokeWidth={2}
+         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
        </svg>
        Admin: Update Status
       </h4>
@@ -246,25 +257,17 @@ export function FeatureRequestModal({
 
     {/* Upvote Section */}
     <div className="flex items-center gap-4 mb-6">
-     <button
+     <div
       onClick={() => onUpvote(request.id)}
-      className="btn btn-outline flex items-center gap-2"
+      className="card card-xs bg-base-100 border border-base-300 hover:border-primary hover:shadow-md transition-all cursor-pointer w-16 h-16"
      >
-      <svg
-       className="w-4 h-4"
-       fill="none"
-       stroke="currentColor"
-       viewBox="0 0 24 24"
-      >
-       <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M5 15l7-7 7 7"
-       />
-      </svg>
-      Upvote ({request.upvote_count})
-     </button>
+      <div className="card-body p-2 flex flex-col items-center justify-center gap-1">
+       <FaChevronUp className="w-4 h-4 text-base-content/70" />
+       <span className="text-sm font-bold text-base-content">
+        {request.upvote_count}
+       </span>
+      </div>
+     </div>
      <div className="text-sm text-base-content/70">
       {request.comment_count} comments
      </div>
@@ -406,29 +409,36 @@ export function FeatureRequestModal({
          {/* Replies */}
          {comment.replies && comment.replies.length > 0 && (
           <div className="ml-8 mt-2 space-y-2">
-           {comment.replies.map((reply: { id: string; content: string; author_name: string; created_at: Date }) => (
-            <div
-             key={reply.id}
-             className="flex gap-3 p-3 bg-base-100 rounded-lg"
-            >
-             <div className="avatar placeholder">
-              <div className="bg-neutral text-neutral-content rounded-full w-6 h-6 flex items-center justify-center">
-               <span className="text-xs">
-                {reply.author_name?.charAt(0).toUpperCase() || "A"}
-               </span>
+           {comment.replies.map(
+            (reply: {
+             id: string;
+             content: string;
+             author_name: string;
+             created_at: Date;
+            }) => (
+             <div
+              key={reply.id}
+              className="flex gap-3 p-3 bg-base-100 rounded-lg"
+             >
+              <div className="avatar placeholder">
+               <div className="bg-neutral text-neutral-content rounded-full w-6 h-6 flex items-center justify-center">
+                <span className="text-xs">
+                 {reply.author_name?.charAt(0).toUpperCase() || "A"}
+                </span>
+               </div>
+              </div>
+              <div className="flex-1">
+               <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium text-xs">{reply.author_name}</span>
+                <span className="text-xs text-base-content/60">
+                 {formatDate(reply.created_at)}
+                </span>
+               </div>
+               <p className="text-xs whitespace-pre-wrap">{reply.content}</p>
               </div>
              </div>
-             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-               <span className="font-medium text-xs">{reply.author_name}</span>
-               <span className="text-xs text-base-content/60">
-                {formatDate(reply.created_at)}
-               </span>
-              </div>
-              <p className="text-xs whitespace-pre-wrap">{reply.content}</p>
-             </div>
-            </div>
-           ))}
+            )
+           )}
           </div>
          )}
         </div>
