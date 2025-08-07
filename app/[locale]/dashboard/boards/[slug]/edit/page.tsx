@@ -113,13 +113,13 @@ export default function EditBoardPage() {
    });
 
    if (response.ok) {
-    showMessage(t('board.boardUpdated'), "success");
+    showMessage(t("board.boardUpdated"), "success");
    } else {
     const errorData = await response.json();
     throw new Error(errorData.error || "Failed to update board");
    }
   } catch (err) {
-   showMessage(t('board.failedToUpdate'), "error");
+   showMessage(t("board.failedToUpdate"), "error");
   } finally {
    setIsSaving(false);
   }
@@ -134,11 +134,7 @@ export default function EditBoardPage() {
  };
 
  const handleDeleteBoard = async () => {
-  if (
-   !window.confirm(
-    t('board.confirmDelete', {title: board?.title || ''})
-   )
-  ) {
+  if (!window.confirm(t("board.confirmDelete", {title: board?.title || ""}))) {
    return;
   }
 
@@ -149,7 +145,7 @@ export default function EditBoardPage() {
    });
 
    if (response.ok) {
-    showMessage(t('board.boardDeleted'), "success");
+    showMessage(t("board.boardDeleted"), "success");
     setTimeout(() => {
      window.location.href = "/dashboard/boards";
     }, 1500);
@@ -158,7 +154,7 @@ export default function EditBoardPage() {
     throw new Error(errorData.error || "Failed to delete board");
    }
   } catch (err) {
-   showMessage(t('board.failedToDelete'), "error");
+   showMessage(t("board.failedToDelete"), "error");
   } finally {
    setIsSaving(false);
   }
@@ -200,13 +196,16 @@ export default function EditBoardPage() {
         />
        </svg>
       </div>
-      <h1 className="text-2xl font-bold mb-2">{t('board.boardNotFound')}</h1>
+      <h1 className="text-2xl font-bold mb-2">{t("board.boardNotFound")}</h1>
       <p className="text-base-content/70 mb-4">
        {error ||
-        t('board.boardNotFoundMessage', {default: "The board you're looking for doesn't exist or you don't have permission to edit it."})}
+        t("board.boardNotFoundMessage", {
+         default:
+          "The board you're looking for doesn't exist or you don't have permission to edit it.",
+        })}
       </p>
       <Link href="/dashboard" className="btn btn-primary">
-       {t('board.backToDashboard')}
+       {t("board.backToDashboard")}
       </Link>
      </div>
     </div>
@@ -222,17 +221,17 @@ export default function EditBoardPage() {
      <div className="flex items-center justify-between mb-8">
       <div>
        <h1 className="text-3xl font-bold text-base-content mb-2">
-        {t('board.editBoard')}: {board.title}
+        {t("board.editBoard")}: {board.title}
        </h1>
        <div className="breadcrumbs text-sm">
         <ul>
          <li>
-          <Link href="/dashboard">{t('dashboard.title')}</Link>
+          <Link href="/dashboard">{t("dashboard.title")}</Link>
          </li>
          <li>
-          <Link href="/dashboard/boards">{t('dashboard.boards')}</Link>
+          <Link href="/dashboard/boards">{t("dashboard.boards")}</Link>
          </li>
-         <li>{t('board.editBoard')}</li>
+         <li>{t("board.editBoard")}</li>
         </ul>
        </div>
       </div>
@@ -242,14 +241,14 @@ export default function EditBoardPage() {
         href={`/dashboard/boards/${slug}/analytics`}
         className="btn btn-outline btn-sm"
        >
-        {t('dashboard.analytics')}
+        {t("dashboard.analytics")}
        </Link>
        <Link
         href={`/b/${slug}`}
         className="btn btn-primary btn-sm"
         target="_blank"
        >
-        {t('navigation.viewPublicBoard')}
+        {t("navigation.viewPublicBoard")}
         <svg
          className="w-4 h-4 ml-1"
          fill="none"
@@ -306,13 +305,17 @@ export default function EditBoardPage() {
        {/* Basic Settings */}
        <div className="card bg-base-100 shadow">
         <div className="card-body">
-         <h2 className="card-title mb-4">{t('board.basicSettings', {default: 'Basic Settings'})}</h2>
+         <h2 className="card-title mb-4">
+          {t("board.basicSettings", {default: "Basic Settings"})}
+         </h2>
 
          <form onSubmit={handleSubmit}>
           <div className="space-y-4">
            <fieldset className="fieldset">
             <label className="label">
-             <span className="label-text font-medium">{t('board.title')} {t('form.required')}</span>
+             <span className="label-text font-medium">
+              {t("board.title")} {t("form.required")}
+             </span>
             </label>
             <input
              type="text"
@@ -322,13 +325,15 @@ export default function EditBoardPage() {
               setBoardForm((prev) => ({...prev, title: e.target.value}))
              }
              required
-             placeholder={t('form.placeholder.boardTitle')}
+             placeholder={t("form.placeholder.boardTitle")}
             />
            </fieldset>
 
            <fieldset className="fieldset">
             <label className="label">
-             <span className="label-text font-medium">{t('board.description')}</span>
+             <span className="label-text font-medium">
+              {t("board.description")}
+             </span>
             </label>
             <textarea
              className="textarea textarea-bordered h-24"
@@ -336,13 +341,15 @@ export default function EditBoardPage() {
              onChange={(e) =>
               setBoardForm((prev) => ({...prev, description: e.target.value}))
              }
-             placeholder={t('form.placeholder.description')}
+             placeholder={t("form.placeholder.description")}
             />
            </fieldset>
 
            <fieldset className="fieldset">
             <label className="label">
-             <span className="label-text font-medium">{t('board.boardUrl')}</span>
+             <span className="label-text font-medium">
+              {t("board.boardUrl")}
+             </span>
             </label>
             <label className="input input-bordered flex items-center gap-2">
              <span className="text-base-content/70 text-sm">/b/</span>
@@ -355,13 +362,11 @@ export default function EditBoardPage() {
               }
               pattern="[a-z0-9-]+"
               title="Only lowercase letters, numbers, and dashes"
-              placeholder={t('form.placeholder.boardSlug')}
+              placeholder={t("form.placeholder.boardSlug")}
              />
             </label>
             <label className="label">
-             <span className="label-text-alt">
-              {t('board.onlyLowercase')}
-             </span>
+             <span className="label-text-alt">{t("board.onlyLowercase")}</span>
             </label>
            </fieldset>
 
@@ -376,9 +381,11 @@ export default function EditBoardPage() {
               }
              />
              <div>
-              <div className="label-text font-medium">{t('board.publicBoard')}</div>
+              <div className="label-text font-medium">
+               {t("board.publicBoard")}
+              </div>
               <div className="label-text-alt">
-               {t('board.allowPublicSubmissions')}
+               {t("board.allowPublicSubmissions")}
               </div>
              </div>
             </label>
@@ -392,21 +399,21 @@ export default function EditBoardPage() {
        <div className="card bg-base-100 shadow">
         <div className="card-body">
          <div className="flex items-center justify-between mb-4">
-          <h2 className="card-title">{t('theme.customization')}</h2>
+          <h2 className="card-title">{t("theme.customization")}</h2>
           <div className="flex gap-2">
            <button
             type="button"
             onClick={() => setPreviewMode(!previewMode)}
             className="btn btn-sm btn-outline"
            >
-            {previewMode ? t('theme.hidePreview') : t('theme.showPreview')}
+            {previewMode ? t("theme.hidePreview") : t("theme.showPreview")}
            </button>
            <button
             type="button"
             onClick={resetTheme}
             className="btn btn-sm btn-ghost"
            >
-            {t('theme.reset')}
+            {t("theme.reset")}
            </button>
           </div>
          </div>
@@ -414,7 +421,9 @@ export default function EditBoardPage() {
          <div className="space-y-4">
           <fieldset className="fieldset">
            <label className="label">
-            <span className="label-text font-medium">{t('theme.primaryColor')}</span>
+            <span className="label-text font-medium">
+             {t("theme.primaryColor")}
+            </span>
            </label>
            <div className="flex items-center gap-3">
             <input
@@ -445,7 +454,9 @@ export default function EditBoardPage() {
 
           <fieldset className="fieldset">
            <label className="label">
-            <span className="label-text font-medium">{t('theme.backgroundColor')}</span>
+            <span className="label-text font-medium">
+             {t("theme.backgroundColor")}
+            </span>
            </label>
            <div className="flex items-center gap-3">
             <input
@@ -476,7 +487,9 @@ export default function EditBoardPage() {
 
           <fieldset className="fieldset">
            <label className="label">
-            <span className="label-text font-medium">{t('theme.textColor')}</span>
+            <span className="label-text font-medium">
+             {t("theme.textColor")}
+            </span>
            </label>
            <div className="flex items-center gap-3">
             <input
@@ -512,15 +525,15 @@ export default function EditBoardPage() {
          {isSaving ? (
           <>
            <span className="loading loading-spinner loading-sm"></span>
-           {t('board.savingChanges')}
+           {t("board.savingChanges")}
           </>
          ) : (
-          t('board.saveChanges')
+          t("board.saveChanges")
          )}
         </button>
 
         {/* Danger Zone */}
-        <div className="divider text-error">{t('dangerZone')}</div>
+        <div className="divider text-error">{t("dangerZone")}</div>
         <button
          onClick={handleDeleteBoard}
          className="btn btn-error btn-outline w-full"
@@ -529,7 +542,7 @@ export default function EditBoardPage() {
          {isSaving ? (
           <>
            <span className="loading loading-spinner loading-sm"></span>
-           {t('board.deleting', {default: 'Deleting...'})}
+           {t("board.deleting", {default: "Deleting..."})}
           </>
          ) : (
           <>
@@ -546,7 +559,7 @@ export default function EditBoardPage() {
              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
             />
            </svg>
-           {t('board.deleteBoard')}
+           {t("board.deleteBoard")}
           </>
          )}
         </button>
@@ -557,7 +570,7 @@ export default function EditBoardPage() {
       <div className="space-y-6">
        <div className="card bg-base-100 shadow">
         <div className="card-body">
-         <h2 className="card-title mb-4">{t('theme.livePreview')}</h2>
+         <h2 className="card-title mb-4">{t("theme.livePreview")}</h2>
 
          {/* Preview Container */}
          <div
@@ -581,7 +594,7 @@ export default function EditBoardPage() {
              className="text-2xl font-bold"
              style={{color: previewTheme.textColor}}
             >
-             {boardForm.title || t('board.title')}
+             {boardForm.title || t("board.title")}
             </h1>
             <div
              className="badge badge-sm"
@@ -591,7 +604,7 @@ export default function EditBoardPage() {
               borderColor: previewTheme.primaryColor,
              }}
             >
-             {t('board.publicBoard')}
+             {t("board.publicBoard")}
             </div>
            </div>
            {boardForm.description && (

@@ -1,98 +1,113 @@
 import {NextRequest, NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
-import { revalidateFeatureRequests } from "@/lib/cache";
-import { memoizedFindFeatureRequest, memoizedFindUpvote } from "@/lib/request-memoization";
+import {revalidateFeatureRequests} from "@/lib/cache";
+import {memoizedFindFeatureRequest} from "@/lib/request-memoization";
+import {requireAuth} from "@/lib/permissions";
 
-export async function POST(
- request: NextRequest,
- {params}: {params: Promise<{id: string}>}
-) {
- try {
-  const resolvedParams = await params;
-  const body = await request.json();
-  const {userIdentifier} = body; // email or user_id
+export const POST = requireAuth(
+ async (request: NextRequest, {params}: {params: Promise<{id: string}>}) => {
+  try {
+   const session = (request as NextRequest & {session: {user: {id: string}}})
+    .session;
+   const resolvedParams = await params;
 
-  if (!userIdentifier) {
-   return NextResponse.json(
-    {success: false, error: "User identifier is required"},
-    {status: 400}
-   );
-  }
+   // Check if feature request exists
+   const featureRequest = await memoizedFindFeatureRequest(resolvedParams.id);
 
-  // Check if feature request exists and get existing upvote in parallel using memoized functions
-  const [featureRequest, existingUpvote] = await Promise.all([
-   memoizedFindFeatureRequest(resolvedParams.id),
-   memoizedFindUpvote(resolvedParams.id, userIdentifier),
-  ]);
-
-  if (!featureRequest) {
-   return NextResponse.json(
-    {success: false, error: "Feature request not found"},
-    {status: 404}
-   );
-  }
-
-  if (existingUpvote) {
-   // Remove upvote (toggle off)
-   await prisma.$transaction([
-    prisma.upvote.delete({
-     where: {id: existingUpvote.id},
-    }),
-    prisma.featureRequest.update({
-     where: {id: resolvedParams.id},
-     data: {
-      upvote_count: {
-       decrement: 1,
-      },
-     },
-    }),
-   ]);
-
-   // Revalidate feature request cache after upvote change
-   if (featureRequest.board) {
-    revalidateFeatureRequests(featureRequest.board.slug, featureRequest.board.creator_id);
+   if (!featureRequest) {
+    return NextResponse.json(
+     {success: false, error: "Feature request not found"},
+     {status: 404}
+    );
    }
 
-   return NextResponse.json({
-    success: true,
-    data: {upvoted: false},
-    message: "Upvote removed",
-   });
-  } else {
-   // Add upvote
-   await prisma.$transaction([
-    prisma.upvote.create({
-     data: {
+   // Check if board is public
+   if (!featureRequest.board?.is_public) {
+    return NextResponse.json(
+     {success: false, error: "This board is private"},
+     {status: 403}
+    );
+   }
+
+   // Check for existing upvote
+   const existingUpvote = await prisma.upvote.findUnique({
+    where: {
+     feature_request_id_user_id: {
       feature_request_id: resolvedParams.id,
-      user_identifier: userIdentifier,
+      user_id: session.user.id,
      },
-    }),
-    prisma.featureRequest.update({
-     where: {id: resolvedParams.id},
-     data: {
-      upvote_count: {
-       increment: 1,
-      },
-     },
-    }),
-   ]);
-
-   // Revalidate feature request cache after upvote change
-   if (featureRequest.board) {
-    revalidateFeatureRequests(featureRequest.board.slug, featureRequest.board.creator_id);
-   }
-
-   return NextResponse.json({
-    success: true,
-    data: {upvoted: true},
-    message: "Upvote added",
+    },
+    select: {id: true},
    });
+
+   if (existingUpvote) {
+    // Remove upvote (toggle off)
+    await prisma.$transaction([
+     prisma.upvote.delete({
+      where: {id: existingUpvote.id},
+     }),
+     prisma.featureRequest.update({
+      where: {id: resolvedParams.id},
+      data: {
+       upvote_count: {
+        decrement: 1,
+       },
+      },
+     }),
+    ]);
+
+    // Revalidate feature request cache after upvote change
+    if (featureRequest.board) {
+     revalidateFeatureRequests(
+      featureRequest.board.slug,
+      featureRequest.board.creator_id
+     );
+    }
+
+    return NextResponse.json({
+     success: true,
+     data: {upvoted: false},
+     message: "Upvote removed",
+    });
+   } else {
+    // Add upvote
+    await prisma.$transaction([
+     prisma.upvote.create({
+      data: {
+       feature_request_id: resolvedParams.id,
+       user_id: session.user.id,
+      },
+     }),
+     prisma.featureRequest.update({
+      where: {id: resolvedParams.id},
+      data: {
+       upvote_count: {
+        increment: 1,
+       },
+      },
+     }),
+    ]);
+
+    // Revalidate feature request cache after upvote change
+    if (featureRequest.board) {
+     revalidateFeatureRequests(
+      featureRequest.board.slug,
+      featureRequest.board.creator_id
+     );
+    }
+
+    return NextResponse.json({
+     success: true,
+     data: {upvoted: true},
+     message: "Upvote added",
+    });
+   }
+  } catch (error) {
+   console.error("Upvote toggle error:", error);
+   return NextResponse.json(
+    {success: false, error: "Internal server error"},
+    {status: 500}
+   );
   }
- } catch (error) {
-  console.error("Upvote toggle error:", error);
-  return NextResponse.json(
-   {success: false, error: "Internal server error"},
-   {status: 500}
-  );
  }
-}
+);

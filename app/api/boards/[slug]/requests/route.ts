@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
-import {CreateFeatureRequestFormData} from "@/types";
-import { revalidateFeatureRequests, CACHE_TAGS } from "@/lib/cache";
+import {revalidateFeatureRequests, CACHE_TAGS} from "@/lib/cache";
+import {requireAuth} from "@/lib/permissions";
 
 export async function GET(
  request: NextRequest,
@@ -62,9 +62,16 @@ export async function GET(
   const featureRequests = await prisma.featureRequest.findMany({
    where: whereClause,
    include: {
+    submitter: {
+     select: {
+      id: true,
+      name: true,
+      image: true,
+     },
+    },
     upvotes: {
      select: {
-      user_identifier: true,
+      user_id: true,
      },
     },
     _count: {
@@ -85,10 +92,13 @@ export async function GET(
   // Cache feature requests for 30 seconds, stale-while-revalidate for 5 minutes
   // Short cache because this data changes frequently with upvotes/comments
   response.headers.set(
-    'Cache-Control',
-    'public, s-maxage=30, stale-while-revalidate=300'
+   "Cache-Control",
+   "public, s-maxage=30, stale-while-revalidate=300"
   );
-  response.headers.set('Cache-Tag', `${CACHE_TAGS.FEATURE_REQUESTS}-${resolvedParams.slug}`);
+  response.headers.set(
+   "Cache-Tag",
+   `${CACHE_TAGS.FEATURE_REQUESTS}-${resolvedParams.slug}`
+  );
 
   return response;
  } catch (error) {
@@ -100,75 +110,94 @@ export async function GET(
  }
 }
 
-export async function POST(
- request: NextRequest,
- {params}: {params: Promise<{slug: string}>}
-) {
- try {
-  const resolvedParams = await params;
-  // First, find the board
-  const board = await prisma.board.findUnique({
-   where: {slug: resolvedParams.slug},
-  });
+export const POST = requireAuth(
+ async (request: NextRequest, {params}: {params: Promise<{slug: string}>}) => {
+  try {
+   const session = (
+    request as NextRequest & {
+     session: {user: {id: string; name?: string | null; email?: string | null}};
+    }
+   ).session;
+   const resolvedParams = await params;
 
-  if (!board) {
+   // First, find the board
+   const board = await prisma.board.findUnique({
+    where: {slug: resolvedParams.slug},
+   });
+
+   if (!board) {
+    return NextResponse.json(
+     {success: false, error: "Board not found"},
+     {status: 404}
+    );
+   }
+
+   if (!board.is_public) {
+    return NextResponse.json(
+     {success: false, error: "This board is private"},
+     {status: 403}
+    );
+   }
+
+   const body = await request.json();
+   const {title, description}: {title: string; description?: string} = body;
+
+   // Validate required fields
+   if (!title?.trim()) {
+    return NextResponse.json(
+     {success: false, error: "Title is required"},
+     {status: 400}
+    );
+   }
+
+   // Create the feature request with authenticated user
+   const featureRequest = await prisma.featureRequest.create({
+    data: {
+     board_id: board.id,
+     title: title.trim(),
+     description: description?.trim() || null,
+     submitter_id: session.user.id,
+     // Keep backward compatibility fields from user session
+     submitter_name: session.user.name || null,
+     submitter_email: session.user.email || null,
+    },
+    include: {
+     submitter: {
+      select: {
+       id: true,
+       name: true,
+       email: true,
+       image: true,
+      },
+     },
+     upvotes: {
+      select: {
+       user_id: true,
+      },
+     },
+     _count: {
+      select: {
+       upvotes: true,
+       comments: true,
+      },
+     },
+    },
+   });
+
+   // Revalidate feature request cache after creating new request
+   revalidateFeatureRequests(resolvedParams.slug, board.creator_id);
+
+   return NextResponse.json({
+    success: true,
+    data: featureRequest,
+    message: "Feature request created successfully",
+   });
+  } catch (error) {
+   console.error("Feature request creation error:", error);
    return NextResponse.json(
-    {success: false, error: "Board not found"},
-    {status: 404}
+    {success: false, error: "Internal server error"},
+    {status: 500}
    );
   }
-
-  if (!board.is_public) {
-   return NextResponse.json(
-    {success: false, error: "This board is private"},
-    {status: 403}
-   );
-  }
-
-  const body = await request.json();
-  const {
-   title,
-   description,
-   submitterName,
-   submitterEmail,
-  }: CreateFeatureRequestFormData = body;
-
-  // Validate required fields
-  if (!title || !submitterEmail) {
-   return NextResponse.json(
-    {success: false, error: "Title and email are required"},
-    {status: 400}
-   );
-  }
-
-  // Create the feature request
-  const featureRequest = await prisma.featureRequest.create({
-   data: {
-    board_id: board.id,
-    title,
-    description,
-    submitter_name: submitterName,
-    submitter_email: submitterEmail,
-   },
-   include: {
-    upvotes: true,
-    comments: true,
-   },
-  });
-
-  // Revalidate feature request cache after creating new request
-  revalidateFeatureRequests(resolvedParams.slug, board.creator_id);
-
-  return NextResponse.json({
-   success: true,
-   data: featureRequest,
-   message: "Feature request created successfully",
-  });
- } catch (error) {
-  console.error("Feature request creation error:", error);
-  return NextResponse.json(
-   {success: false, error: "Internal server error"},
-   {status: 500}
-  );
  }
-}
+);

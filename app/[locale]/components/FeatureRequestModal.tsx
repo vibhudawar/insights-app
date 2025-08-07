@@ -1,12 +1,13 @@
 "use client";
 
 import {useState, useEffect, useCallback} from "react";
-import {
- FeatureRequestWithDetails,
- CommentWithReplies,
- CreateCommentFormData,
-} from "@/types";
+import {useSession} from "next-auth/react";
+import {FeatureRequestWithDetails, CommentWithReplies} from "@/types";
+import {useAuthAction} from "@/hooks/useAuthAction";
 import {FaChevronUp} from "react-icons/fa6";
+import {toast} from "@/utils/toast";
+import {FaEdit, FaTrash} from "react-icons/fa";
+import {EditCommentModal} from "@/components/EditCommentModal";
 
 interface FeatureRequestModalProps {
  request: FeatureRequestWithDetails;
@@ -32,16 +33,30 @@ export function FeatureRequestModal({
  const [isLoadingComments, setIsLoadingComments] = useState(false);
  const [showCommentForm, setShowCommentForm] = useState(false);
  const [replyToComment, setReplyToComment] = useState<string | null>(null);
- const [commentForm, setCommentForm] = useState<CreateCommentFormData>({
+ const [commentForm, setCommentForm] = useState({
   content: "",
-  authorName: "",
-  authorEmail: "",
-  parentCommentId: undefined,
+  parentCommentId: undefined as string | undefined,
  });
  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
  const [commentError, setCommentError] = useState("");
  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
  const [selectedStatus, setSelectedStatus] = useState<string>(request.status);
+ const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+ const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+ const [editingComment, setEditingComment] = useState<CommentWithReplies | null>(null);
+
+ const {data: session} = useSession();
+ const {executeWithAuth} = useAuthAction({
+  requireAuthMessage: "Please sign in to add a comment.",
+ });
+
+ // Helper function to check if user can modify a comment
+ const canModifyComment = (comment: any) => {
+  const userId = (session?.user as {id?: string})?.id;
+  const isCommentAuthor = userId === comment.author_id;
+  const isBoardOwner = userId === request.board?.creator_id;
+  return isCommentAuthor || isBoardOwner;
+ };
 
  const getStatusBadge = (status: string) => {
   const statusColors = {
@@ -100,6 +115,51 @@ export function FeatureRequestModal({
   }
  }, [isOpen, request.id, fetchComments]);
 
+ // SSE connection for real-time comment updates
+ const handleSSEEvent = useCallback((event: any) => {
+  console.log('Comment SSE event received:', event);
+  
+  switch (event.type) {
+   case 'comment_created':
+    if (event.data.feature_request_id === request.id) {
+     // Add new comment to the list
+     fetchComments(); // Refresh to get the new comment with proper structure
+    }
+    break;
+    
+   case 'comment_updated':
+    if (event.data.feature_request_id === request.id) {
+     // Update existing comment
+     setComments(prev => 
+      prev.map(comment => 
+       comment.id === event.data.id 
+        ? { 
+           ...comment, 
+           content: event.data.content,
+           is_edited: event.data.is_edited,
+           updated_at: event.data.updated_at
+          }
+        : comment
+      )
+     );
+    }
+    break;
+    
+   case 'comment_deleted':
+    if (event.data.feature_request_id === request.id) {
+     // Remove comment from the list
+     setComments(prev => prev.filter(comment => comment.id !== event.data.id));
+     
+     // Close edit modal if the deleted comment is being edited
+     if (editingCommentId === event.data.id) {
+      setEditingCommentId(null);
+      setEditingComment(null);
+     }
+    }
+    break;
+  }
+ }, [request.id, editingCommentId, editingComment, fetchComments]);
+
  const handleSubmitComment = async (e: React.FormEvent) => {
   e.preventDefault();
   if (!request.id) return;
@@ -116,7 +176,7 @@ export function FeatureRequestModal({
       "Content-Type": "application/json",
      },
      body: JSON.stringify({
-      ...commentForm,
+      content: commentForm.content,
       parentCommentId: replyToComment,
      }),
     }
@@ -127,13 +187,12 @@ export function FeatureRequestModal({
    if (result.success) {
     setCommentForm({
      content: "",
-     authorName: "",
-     authorEmail: "",
      parentCommentId: undefined,
     });
     setShowCommentForm(false);
     setReplyToComment(null);
     fetchComments(); // Refresh comments
+    toast.success("Comment posted successfully!");
    } else {
     setCommentError(result.error || "Failed to submit comment");
    }
@@ -145,8 +204,53 @@ export function FeatureRequestModal({
  };
 
  const handleReply = (commentId: string) => {
-  setReplyToComment(commentId);
-  setShowCommentForm(true);
+  executeWithAuth(() => {
+   setReplyToComment(commentId);
+   setShowCommentForm(true);
+  });
+ };
+
+ const handleEditComment = (commentId: string) => {
+  executeWithAuth(() => {
+   const comment = comments.find(c => c.id === commentId);
+   if (comment) {
+    setEditingComment(comment);
+    setEditingCommentId(commentId);
+   }
+  });
+ };
+
+ const handleCloseEditComment = () => {
+  setEditingComment(null);
+  setEditingCommentId(null);
+ };
+
+ const handleDeleteComment = async (commentId: string) => {
+  executeWithAuth(async () => {
+   if (!window.confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+    return;
+   }
+
+   setDeletingCommentId(commentId);
+   try {
+    const response = await fetch(`/api/feature-requests/${request.id}/comments/${commentId}`, {
+     method: 'DELETE',
+    });
+
+    if (response.ok) {
+     fetchComments(); // Refresh comments
+     toast.success('Comment deleted successfully');
+    } else {
+     const errorData = await response.json();
+     toast.error(errorData.error || 'Failed to delete comment');
+    }
+   } catch (error) {
+    console.error('Error deleting comment:', error);
+    toast.error('An error occurred while deleting the comment');
+   } finally {
+    setDeletingCommentId(null);
+   }
+  });
  };
 
  const handleStatusUpdate = async () => {
@@ -278,7 +382,7 @@ export function FeatureRequestModal({
      <div className="flex items-center justify-between mb-4">
       <h4 className="font-semibold text-lg">Comments</h4>
       <button
-       onClick={() => setShowCommentForm(true)}
+       onClick={() => executeWithAuth(() => setShowCommentForm(true))}
        className="btn btn-sm btn-primary"
       >
        Add Comment
@@ -310,6 +414,27 @@ export function FeatureRequestModal({
        )}
 
        <form onSubmit={handleSubmitComment}>
+        {/* Show user info */}
+        <div className="flex items-center gap-3 mb-4 p-3 bg-base-100 rounded-lg">
+         <div className="avatar">
+          <div className="w-8 h-8 rounded-full">
+           <img
+            src={
+             session?.user?.image ||
+             `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              session?.user?.name || "User"
+             )}&background=random`
+            }
+            alt="Profile"
+           />
+          </div>
+         </div>
+         <div>
+          <p className="font-medium text-sm">{session?.user?.name}</p>
+          <p className="text-xs text-base-content/60">{session?.user?.email}</p>
+         </div>
+        </div>
+
         <div className="form-control mb-4">
          <textarea
           placeholder="Write your comment..."
@@ -320,33 +445,6 @@ export function FeatureRequestModal({
           }
           required
          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-         <div className="form-control">
-          <input
-           type="text"
-           placeholder="Your name"
-           className="input input-bordered input-sm"
-           value={commentForm.authorName}
-           onChange={(e) =>
-            setCommentForm((prev) => ({...prev, authorName: e.target.value}))
-           }
-           required
-          />
-         </div>
-         <div className="form-control">
-          <input
-           type="email"
-           placeholder="Your email"
-           className="input input-bordered input-sm"
-           value={commentForm.authorEmail}
-           onChange={(e) =>
-            setCommentForm((prev) => ({...prev, authorEmail: e.target.value}))
-           }
-           required
-          />
-         </div>
         </div>
 
         <button
@@ -390,19 +488,48 @@ export function FeatureRequestModal({
            </div>
           </div>
           <div className="flex-1">
-           <div className="flex items-center gap-2 mb-2">
-            <span className="font-medium text-sm">{comment.author_name}</span>
-            <span className="text-xs text-base-content/60">
-             {formatDate(comment.created_at)}
-            </span>
+           <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+             <span className="font-medium text-sm">{comment.author_name}</span>
+             <span className="text-xs text-base-content/60">
+              {formatDate(comment.created_at)}
+             </span>
+             {comment.is_edited && (
+              <span className="text-xs text-base-content/50 italic">(edited)</span>
+             )}
+            </div>
+            {canModifyComment(comment) && (
+             <div className="flex items-center gap-1">
+              <button
+               onClick={() => handleEditComment(comment.id)}
+               className="btn btn-ghost btn-xs"
+               disabled={deletingCommentId === comment.id}
+              >
+               <FaEdit className="w-3 h-3" />
+              </button>
+              <button
+               onClick={() => handleDeleteComment(comment.id)}
+               className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+               disabled={deletingCommentId === comment.id}
+              >
+               {deletingCommentId === comment.id ? (
+                <span className="loading loading-spinner loading-xs"></span>
+               ) : (
+                <FaTrash className="w-3 h-3" />
+               )}
+              </button>
+             </div>
+            )}
            </div>
            <p className="text-sm whitespace-pre-wrap mb-2">{comment.content}</p>
-           <button
-            onClick={() => handleReply(comment.id)}
-            className="text-xs text-primary hover:underline"
-           >
-            Reply
-           </button>
+           <div className="flex items-center gap-2">
+            <button
+             onClick={() => handleReply(comment.id)}
+             className="text-xs text-primary hover:underline"
+            >
+             Reply
+            </button>
+           </div>
           </div>
          </div>
 
@@ -447,6 +574,15 @@ export function FeatureRequestModal({
      )}
     </div>
    </div>
+   
+   {/* Edit Comment Modal */}
+   <EditCommentModal
+    isOpen={!!editingComment}
+    onClose={handleCloseEditComment}
+    comment={editingComment}
+    featureRequestId={request.id}
+    onCommentUpdated={fetchComments}
+   />
   </div>
  );
 }

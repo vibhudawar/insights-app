@@ -38,7 +38,7 @@ export async function BoardServer({ slug }: BoardServerProps) {
     include: {
       upvotes: {
         select: {
-          user_identifier: true,
+          user_id: true,
         },
       },
       _count: {

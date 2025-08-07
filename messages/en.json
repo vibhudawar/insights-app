@@ -87,5 +87,27 @@
       "newest": "Newest",
       "oldest": "Oldest"
     }
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out", 
+    "user": "User",
+    "signInRequired": "Sign In Required",
+    "signInMessage": "Please sign in to continue with this action.",
+    "signInToSubmit": "Sign In to Submit Request",
+    "signInToSubmitMessage": "Please sign in with your Google account to submit a feature request.",
+    "whySignIn": "Why sign in?",
+    "benefit1": "Track your submissions and comments",
+    "benefit2": "Edit and manage your own content",
+    "benefit3": "Get notified of status updates",
+    "continueWithGoogle": "Continue with Google",
+    "termsMessage": "By continuing, you agree to our",
+    "privacyPolicy": "Privacy Policy"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "by": "by",
+    "byAnonymous": "by Anonymous User",
+    "comments": "comments"
   }
 }

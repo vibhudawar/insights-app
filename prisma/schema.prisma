@@ -22,9 +22,12 @@ model User {
   updated_at     DateTime  @updatedAt
   
   // Relations
-  boards         Board[]
-  accounts       Account[]
-  sessions       Session[]
+  boards           Board[]
+  accounts         Account[]
+  sessions         Session[]
+  feature_requests FeatureRequest[]
+  comments         Comment[]
+  upvotes          Upvote[]
   
   @@map("users")
 }
@@ -82,8 +85,9 @@ model Board {
 model FeatureRequest {
   id               String           @id @default(cuid())
   board_id         String
-  submitter_email  String?
-  submitter_name   String?
+  submitter_id     String?          // Foreign key to User (nullable for existing data)
+  submitter_email  String?          // Keep for backward compatibility
+  submitter_name   String?          // Keep for backward compatibility
   title            String
   description      String?
   status           RequestStatus    @default(NEW)
@@ -93,31 +97,35 @@ model FeatureRequest {
   updated_at       DateTime         @updatedAt
   
   // Relations
-  board    Board     @relation(fields: [board_id], references: [id], onDelete: Cascade)
-  upvotes  Upvote[]
-  comments Comment[]
+  board     Board  @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  submitter User?  @relation(fields: [submitter_id], references: [id], onDelete: SetNull)
+  upvotes   Upvote[]
+  comments  Comment[]
   
   @@index([board_id])
   @@index([status])
   @@index([created_at])
   @@index([upvote_count])
+  @@index([submitter_id])
   @@index([board_id, status])
   @@index([board_id, upvote_count])
+  @@index([submitter_id, board_id])
   @@map("feature_requests")
 }
 
 model Upvote {
   id                  String   @id @default(cuid())
   feature_request_id  String
-  user_identifier     String   // email or user_id
+  user_id             String   // Required - no more anonymous upvotes
   created_at          DateTime @default(now())
   
   // Relations
   feature_request FeatureRequest @relation(fields: [feature_request_id], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
   
-  @@unique([feature_request_id, user_identifier])
+  @@unique([feature_request_id, user_id])
   @@index([feature_request_id])
-  @@index([user_identifier])
+  @@index([user_id])
   @@map("upvotes")
 }
 
@@ -125,8 +133,9 @@ model Comment {
   id                  String    @id @default(cuid())
   feature_request_id  String
   parent_comment_id   String?
-  author_name         String
-  author_email        String
+  author_id           String?   // Foreign key to User (nullable for existing data)
+  author_name         String    // Keep for backward compatibility
+  author_email        String    // Keep for backward compatibility
   content             String
   is_edited           Boolean   @default(false)
   created_at          DateTime  @default(now())
@@ -134,9 +143,12 @@ model Comment {
   
   // Relations
   feature_request FeatureRequest @relation(fields: [feature_request_id], references: [id], onDelete: Cascade)
+  author          User?          @relation(fields: [author_id], references: [id], onDelete: SetNull)
   parent_comment  Comment?       @relation("CommentReplies", fields: [parent_comment_id], references: [id])
   replies         Comment[]      @relation("CommentReplies")
   
+  @@index([author_id])
+  @@index([author_id, feature_request_id])
   @@map("comments")
 }
 
