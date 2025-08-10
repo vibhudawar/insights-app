@@ -1,19 +1,27 @@
 "use client";
 
 import {useState, useEffect, useCallback} from "react";
-import {useSession} from "next-auth/react";
 import {FeatureRequestWithDetails, CommentWithReplies} from "@/types";
 import {useAuthAction} from "@/hooks/useAuthAction";
 import {toast} from "@/utils/toast";
-import {FaEdit, FaTrash} from "react-icons/fa";
 import {EditCommentModal} from "./EditCommentModal";
+import Image from "next/image";
+import {useCurrentUser} from "@/hooks/useCurrentUser";
+import {Comment} from "@prisma/client";
+import {formatDate} from "@/utils/utility";
+import {StatusBadge} from "@/components/StatusBadge";
+import {FaRegCheckCircle} from "react-icons/fa";
+import {
+ deleteComment,
+ getComments,
+ postComment,
+ updateFeatureStatus,
+} from "@/frontend apis/Feature Requests/FeatureRequestApi";
 
 interface FeatureRequestModalProps {
  request: FeatureRequestWithDetails;
  isOpen: boolean;
  onClose: () => void;
- onUpvote: (requestId: string) => void;
- userIdentifier: string;
  isAdmin?: boolean;
  onStatusUpdate?: (requestId: string, newStatus: string) => void;
 }
@@ -22,12 +30,10 @@ export function FeatureRequestModal({
  request,
  isOpen,
  onClose,
- onUpvote,
- // eslint-disable-next-line @typescript-eslint/no-unused-vars
- userIdentifier, // Used by parent component for upvoting
  isAdmin = false,
  onStatusUpdate,
 }: FeatureRequestModalProps) {
+ const user = useCurrentUser();
  const [comments, setComments] = useState<CommentWithReplies[]>([]);
  const [isLoadingComments, setIsLoadingComments] = useState(false);
  const [showCommentForm, setShowCommentForm] = useState(false);
@@ -46,52 +52,16 @@ export function FeatureRequestModal({
  );
  const [editingComment, setEditingComment] =
   useState<CommentWithReplies | null>(null);
-
- const {data: session} = useSession();
  const {executeWithAuth} = useAuthAction({
   requireAuthMessage: "Please sign in to add a comment.",
  });
 
  // Helper function to check if user can modify a comment
- const canModifyComment = (comment: any) => {
-  const userId = (session?.user as {id?: string})?.id;
+ const canModifyComment = (comment: Comment) => {
+  const userId = user?.id;
   const isCommentAuthor = userId === comment.author_id;
   const isBoardOwner = userId === request.board?.creator_id;
   return isCommentAuthor || isBoardOwner;
- };
-
- const getStatusBadge = (status: string) => {
-  const statusColors = {
-   NEW: "badge-info",
-   IN_PROGRESS: "badge-warning",
-   SHIPPED: "badge-success",
-   CANCELLED: "badge-error",
-  };
-  const statusLabels = {
-   NEW: "New",
-   IN_PROGRESS: "In Progress",
-   SHIPPED: "Shipped",
-   CANCELLED: "Cancelled",
-  };
-  return (
-   <div
-    className={`badge ${
-     statusColors[status as keyof typeof statusColors] || "badge-ghost"
-    }`}
-   >
-    {statusLabels[status as keyof typeof statusLabels] || status}
-   </div>
-  );
- };
-
- const formatDate = (date: string | Date) => {
-  return new Date(date).toLocaleDateString("en-US", {
-   year: "numeric",
-   month: "short",
-   day: "numeric",
-   hour: "2-digit",
-   minute: "2-digit",
-  });
  };
 
  const fetchComments = useCallback(async () => {
@@ -99,11 +69,8 @@ export function FeatureRequestModal({
 
   setIsLoadingComments(true);
   try {
-   const response = await fetch(`/api/feature-requests/${request.id}/comments`);
-   if (response.ok) {
-    const data = await response.json();
-    setComments(data.data || []);
-   }
+   const response = await getComments(request.id);
+   setComments(response.data || []);
   } catch (error) {
    console.error("Error fetching comments:", error);
   } finally {
@@ -125,33 +92,23 @@ export function FeatureRequestModal({
   setCommentError("");
 
   try {
-   const response = await fetch(
-    `/api/feature-requests/${request.id}/comments`,
-    {
-     method: "POST",
-     headers: {
-      "Content-Type": "application/json",
-     },
-     body: JSON.stringify({
-      content: commentForm.content,
-      parentCommentId: replyToComment,
-     }),
-    }
+   const response = await postComment(
+    request.id,
+    commentForm.content,
+    replyToComment
    );
 
-   const result = await response.json();
-
-   if (result.success) {
+   if (response.success) {
     setCommentForm({
      content: "",
      parentCommentId: undefined,
     });
     setShowCommentForm(false);
     setReplyToComment(null);
-    fetchComments(); // Refresh comments
+    fetchComments();
     toast.success("Comment posted successfully!");
    } else {
-    setCommentError(result.error || "Failed to submit comment");
+    setCommentError(response.error || "Failed to submit comment");
    }
   } catch {
    setCommentError("An error occurred. Please try again.");
@@ -161,20 +118,18 @@ export function FeatureRequestModal({
  };
 
  const handleReply = (commentId: string) => {
-  executeWithAuth(() => {
-   setReplyToComment(commentId);
-   setShowCommentForm(true);
-  });
+  if (!user) return;
+  setReplyToComment(commentId);
+  setShowCommentForm(true);
  };
 
  const handleEditComment = (commentId: string) => {
-  executeWithAuth(() => {
-   const comment = comments.find((c) => c.id === commentId);
-   if (comment) {
-    setEditingComment(comment);
-    setEditingCommentId(commentId);
-   }
-  });
+  if (!user) return;
+  const comment = comments.find((c) => c.id === commentId);
+  if (comment) {
+   setEditingComment(comment);
+   setEditingCommentId(commentId);
+  }
  };
 
  const handleCloseEditComment = () => {
@@ -194,22 +149,16 @@ export function FeatureRequestModal({
 
    setDeletingCommentId(commentId);
    try {
-    const response = await fetch(
-     `/api/feature-requests/${request.id}/comments/${commentId}`,
-     {
-      method: "DELETE",
-     }
-    );
+    const response = await deleteComment(request.id, commentId);
 
     if (response.ok) {
-     fetchComments(); // Refresh comments
+     fetchComments();
      toast.success("Comment deleted successfully");
     } else {
      const errorData = await response.json();
      toast.error(errorData.error || "Failed to delete comment");
     }
-   } catch (error) {
-    console.error("Error deleting comment:", error);
+   } catch {
     toast.error("An error occurred while deleting the comment");
    } finally {
     setDeletingCommentId(null);
@@ -217,18 +166,17 @@ export function FeatureRequestModal({
   });
  };
 
+ const handleOpenCommentForm = () => {
+  if (!user) return;
+  setShowCommentForm(true);
+ };
+
  const handleStatusUpdate = async () => {
   if (!onStatusUpdate || selectedStatus === request.status) return;
 
   setIsUpdatingStatus(true);
   try {
-   const response = await fetch(`/api/feature-requests/${request.id}/status`, {
-    method: "PUT",
-    headers: {
-     "Content-Type": "application/json",
-    },
-    body: JSON.stringify({status: selectedStatus}),
-   });
+   const response = await updateFeatureStatus(request.id, selectedStatus);
 
    if (response.ok) {
     onStatusUpdate(request.id, selectedStatus);
@@ -254,7 +202,7 @@ export function FeatureRequestModal({
      <div className="flex-1 pr-4">
       <div className="flex items-start gap-4 mb-4">
        <h3 className="font-bold text-xl flex-1">{request.title}</h3>
-       {request.status !== "NEW" && getStatusBadge(request.status)}
+       {request.status !== "NEW" && StatusBadge(request.status)}
       </div>
       <p className="text-sm text-base-content/70 mb-4">
        Submitted by {request.submitter_name || "Anonymous"} •{" "}
@@ -279,19 +227,7 @@ export function FeatureRequestModal({
     {isAdmin && (
      <div className="mb-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
       <h4 className="font-semibold mb-3 flex items-center gap-2">
-       <svg
-        className="w-4 h-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-       >
-        <path
-         strokeLinecap="round"
-         strokeLinejoin="round"
-         strokeWidth={2}
-         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-       </svg>
+       <FaRegCheckCircle />
        Admin: Update Status
       </h4>
       <div className="flex items-center gap-3">
@@ -325,25 +261,6 @@ export function FeatureRequestModal({
 
     {/* Upvote Section */}
     <div className="flex items-center gap-4 mb-6">
-     <button
-      onClick={() => onUpvote(request.id)}
-      className="btn btn-outline flex items-center gap-2"
-     >
-      <svg
-       className="w-4 h-4"
-       fill="none"
-       stroke="currentColor"
-       viewBox="0 0 24 24"
-      >
-       <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M5 15l7-7 7 7"
-       />
-      </svg>
-      Upvote ({request.upvote_count})
-     </button>
      <div className="text-sm text-base-content/70">
       {request.comment_count} comments
      </div>
@@ -354,7 +271,7 @@ export function FeatureRequestModal({
      <div className="flex items-center justify-between mb-4">
       <h4 className="font-semibold text-lg">Comments</h4>
       <button
-       onClick={() => executeWithAuth(() => setShowCommentForm(true))}
+       onClick={handleOpenCommentForm}
        className="btn btn-sm btn-primary"
       >
        Add Comment
@@ -390,20 +307,17 @@ export function FeatureRequestModal({
         <div className="flex items-center gap-3 mb-4 p-3 bg-base-100 rounded-lg">
          <div className="avatar">
           <div className="w-8 h-8 rounded-full">
-           <img
-            src={
-             session?.user?.image ||
-             `https://ui-avatars.com/api/?name=${encodeURIComponent(
-              session?.user?.name || "User"
-             )}&background=random`
-            }
+           <Image
+            src={user?.image || ""}
             alt="Profile"
+            width={32}
+            height={32}
            />
           </div>
          </div>
          <div>
-          <p className="font-medium text-sm">{session?.user?.name}</p>
-          <p className="text-xs text-base-content/60">{session?.user?.email}</p>
+          <p className="font-medium text-sm">{user?.name}</p>
+          <p className="text-xs text-base-content/60">{user?.email}</p>
          </div>
         </div>
 
@@ -476,20 +390,20 @@ export function FeatureRequestModal({
              <div className="flex items-center gap-1">
               <button
                onClick={() => handleEditComment(comment.id)}
-               className="btn btn-ghost btn-xs"
+               className="btn btn-soft btn-primary btn-xs"
                disabled={deletingCommentId === comment.id}
               >
-               <FaEdit className="w-3 h-3" />
+               Update
               </button>
               <button
                onClick={() => handleDeleteComment(comment.id)}
-               className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+               className="btn btn-soft btn-error btn-xs hover:text-white"
                disabled={deletingCommentId === comment.id}
               >
                {deletingCommentId === comment.id ? (
                 <span className="loading loading-spinner loading-xs"></span>
                ) : (
-                <FaTrash className="w-3 h-3" />
+                "Delete"
                )}
               </button>
              </div>

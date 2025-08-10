@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
-import {revalidateFeatureRequests} from "@/lib/cache";
-import {memoizedFindFeatureRequest} from "@/lib/request-memoization";
+import {revalidateFeatureRequestsAsync} from "@/lib/cache";
+import {memoizedFindFeatureRequestForUpvote} from "@/lib/request-memoization";
 import {requireAuth} from "@/lib/permissions";
 
 export const POST = requireAuth(
@@ -11,8 +11,10 @@ export const POST = requireAuth(
     .session;
    const resolvedParams = await params;
 
-   // Check if feature request exists
-   const featureRequest = await memoizedFindFeatureRequest(resolvedParams.id);
+   // Check if feature request exists (optimized query)
+   const featureRequest = await memoizedFindFeatureRequestForUpvote(
+    resolvedParams.id
+   );
 
    if (!featureRequest) {
     return NextResponse.json(
@@ -29,79 +31,83 @@ export const POST = requireAuth(
     );
    }
 
-   // Check for existing upvote
-   const existingUpvote = await prisma.upvote.findUnique({
-    where: {
-     feature_request_id_user_id: {
-      feature_request_id: resolvedParams.id,
-      user_id: session.user.id,
+   // Check for existing upvote and perform operation in single optimized transaction
+   const result = await prisma.$transaction(async (tx) => {
+    // Check for existing upvote
+    const existingUpvote = await tx.upvote.findUnique({
+     where: {
+      feature_request_id_user_id: {
+       feature_request_id: resolvedParams.id,
+       user_id: session.user.id,
+      },
      },
-    },
-    select: {id: true},
-   });
+     select: {id: true},
+    });
 
-   if (existingUpvote) {
-    // Remove upvote (toggle off)
-    await prisma.$transaction([
-     prisma.upvote.delete({
+    if (existingUpvote) {
+     // Remove upvote and decrement count
+     await tx.upvote.delete({
       where: {id: existingUpvote.id},
-     }),
-     prisma.featureRequest.update({
+     });
+
+     const updatedRequest = await tx.featureRequest.update({
       where: {id: resolvedParams.id},
       data: {
        upvote_count: {
         decrement: 1,
        },
       },
-     }),
-    ]);
+      select: {upvote_count: true},
+     });
 
-    // Revalidate feature request cache after upvote change
-    if (featureRequest.board) {
-     revalidateFeatureRequests(
-      featureRequest.board.slug,
-      featureRequest.board.creator_id
-     );
-    }
-
-    return NextResponse.json({
-     success: true,
-     data: {upvoted: false},
-     message: "Upvote removed",
-    });
-   } else {
-    // Add upvote
-    await prisma.$transaction([
-     prisma.upvote.create({
+     return {
+      upvoted: false,
+      upvote_count: updatedRequest.upvote_count,
+      message: "Upvote removed",
+     };
+    } else {
+     // Add upvote and increment count
+     await tx.upvote.create({
       data: {
        feature_request_id: resolvedParams.id,
        user_id: session.user.id,
       },
-     }),
-     prisma.featureRequest.update({
+     });
+
+     const updatedRequest = await tx.featureRequest.update({
       where: {id: resolvedParams.id},
       data: {
        upvote_count: {
         increment: 1,
        },
       },
-     }),
-    ]);
+      select: {upvote_count: true},
+     });
 
-    // Revalidate feature request cache after upvote change
-    if (featureRequest.board) {
-     revalidateFeatureRequests(
-      featureRequest.board.slug,
-      featureRequest.board.creator_id
-     );
+     return {
+      upvoted: true,
+      upvote_count: updatedRequest.upvote_count,
+      message: "Upvote added",
+     };
     }
+   });
 
-    return NextResponse.json({
-     success: true,
-     data: {upvoted: true},
-     message: "Upvote added",
-    });
+   // Trigger async cache revalidation (non-blocking)
+   if (featureRequest.board) {
+    revalidateFeatureRequestsAsync(
+     featureRequest.board.slug,
+     featureRequest.board.creator_id
+    );
    }
+
+   return NextResponse.json({
+    success: true,
+    data: {
+     upvoted: result.upvoted,
+     upvote_count: result.upvote_count,
+    },
+    message: result.message,
+   });
   } catch (error) {
    console.error("Upvote toggle error:", error);
    return NextResponse.json(

@@ -103,3 +103,24 @@ export const memoizedFindUpvote = cache(
   });
  }
 );
+
+/**
+ * Optimized memoized feature request lookup for upvote operations
+ * Only fetches essential fields needed for upvote validation
+ */
+export const memoizedFindFeatureRequestForUpvote = cache(async (id: string) => {
+ return prisma.featureRequest.findUnique({
+  where: {id},
+  select: {
+   id: true,
+   upvote_count: true,
+   board: {
+    select: {
+     slug: true,
+     creator_id: true,
+     is_public: true,
+    },
+   },
+  },
+ });
+});

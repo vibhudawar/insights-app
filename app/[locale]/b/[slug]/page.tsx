@@ -2,7 +2,7 @@
 
 import {useEffect, useState, useCallback} from "react";
 import {useParams} from "next/navigation";
-import {useSession, signIn, signOut} from "next-auth/react";
+import {signIn, signOut} from "next-auth/react";
 import {Link} from "@/i18n/navigation";
 import {useTranslations} from "next-intl";
 import {
@@ -22,15 +22,25 @@ import {
  FaArrowRightFromBracket,
 } from "react-icons/fa6";
 import {toast} from "@/utils/toast";
-
-// Status options will be translated dynamically in component
-
-// Sort options will be translated dynamically in component
+import {useCurrentUser} from "@/hooks/useCurrentUser";
+import Image from "next/image";
+import {VscError} from "react-icons/vsc";
+import {HiOutlineBell} from "react-icons/hi";
+import {MdErrorOutline} from "react-icons/md";
+import {
+ deleteFeatureRequest,
+ getBoard,
+ getFeatureRequests,
+ saveFeatureRequest,
+ upvoteFeatureRequest,
+} from "@/frontend apis/Feature Requests/BoardApi";
 
 export default function PublicBoardPage() {
  const params = useParams();
  const slug = params.slug as string;
- const {data: session} = useSession();
+ const user = useCurrentUser();
+ const userId = user?.id;
+
  const t = useTranslations();
 
  const statusOptions = [
@@ -80,11 +90,11 @@ export default function PublicBoardPage() {
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [submitError, setSubmitError] = useState("");
 
- // User identifier for upvoting (stored in localStorage)
- const [userIdentifier, setUserIdentifier] = useState("");
+ // User identifier for upvoting (stored in localStorage)setUserIdentifier] = useState("");
 
  // Add this new state to track which requests are upvoted by current user
  const [upvotedRequests, setUpvotedRequests] = useState<Set<string>>(new Set());
+ const [upvoteCount, setUpvoteCount] = useState<number>(0);
 
  // Modal state
  const [selectedRequest, setSelectedRequest] =
@@ -102,27 +112,10 @@ export default function PublicBoardPage() {
   useState<FeatureRequestWithDetails | null>(null);
 
  useEffect(() => {
-  // Get or create user identifier for upvoting
-  let identifier = localStorage.getItem("insights_user_id");
-  if (!identifier) {
-   identifier = `anon_${Date.now()}_${Math.random()
-    .toString(36)
-    .substring(2, 11)}`;
-   localStorage.setItem("insights_user_id", identifier);
-  }
-  setUserIdentifier(identifier);
- }, []);
-
- useEffect(() => {
   const fetchBoardData = async () => {
    try {
-    // Fetch board info
-    const boardResponse = await fetch(`/api/boards/slug/${slug}`);
-    if (!boardResponse.ok) {
-     throw new Error("Board not found");
-    }
-    const boardData = await boardResponse.json();
-    setBoard(boardData.data);
+    const boardResponse = await getBoard(slug);
+    setBoard(boardResponse.data);
    } catch {
     setError("Board not found or is private");
    } finally {
@@ -138,167 +131,34 @@ export default function PublicBoardPage() {
  const fetchFeatureRequests = useCallback(
   async (bypassCache = false) => {
    try {
-    const params = new URLSearchParams();
-    if (selectedStatus !== "ALL") params.append("status", selectedStatus);
-    if (searchTerm) params.append("search", searchTerm);
-    params.append("sortBy", sortBy);
+    const response: FeatureRequestWithDetails[] = await getFeatureRequests({
+     slug,
+     selectedStatus,
+     searchTerm,
+     sortBy,
+     bypassCache,
+    });
 
-    const fetchOptions: RequestInit = {};
-    if (bypassCache) {
-     // Force fresh data by bypassing cache
-     fetchOptions.cache = "no-store";
-     fetchOptions.headers = {
-      "Cache-Control": "no-cache",
-      Pragma: "no-cache",
-     };
-    }
+    setFeatureRequests(response.data || []);
 
-    const response = await fetch(
-     `/api/boards/${slug}/requests?${params}`,
-     fetchOptions
-    );
-    if (response.ok) {
-     const data = await response.json();
-     setFeatureRequests(data.data || []);
-
-     // Update upvoted requests set based on session user ID
-     if ((session?.user as {id?: string})?.id) {
-      const upvotedSet = new Set<string>();
-      data.data?.forEach((request: FeatureRequestWithDetails) => {
-       const hasUpvoted = request.upvotes?.some(
-        (upvote: {user_id: string}) =>
-         upvote.user_id === (session?.user as {id: string})?.id
-       );
-       if (hasUpvoted) {
-        upvotedSet.add(request.id);
-       }
-      });
-      setUpvotedRequests(upvotedSet);
-     }
+    // Update upvoted requests set based on session user ID
+    if (userId) {
+     const upvotedSet = new Set<string>();
+     response.data?.forEach((request: FeatureRequestWithDetails) => {
+      const hasUpvoted = request.upvotes?.some(
+       (upvote: {user_id: string}) => upvote.user_id === userId
+      );
+      if (hasUpvoted) {
+       upvotedSet.add(request.id);
+      }
+     });
+     setUpvotedRequests(upvotedSet);
     }
    } catch (error) {
     console.error("Error fetching feature requests:", error);
    }
   },
-  [slug, selectedStatus, searchTerm, sortBy, userIdentifier]
- );
-
- // SSE connection for real-time updates
- const handleSSEEvent = useCallback(
-  (event: any) => {
-   console.log("SSE event received:", event);
-
-   switch (event.type) {
-    case "feature_request_created":
-     // Add new feature request to the list
-     setFeatureRequests((prev) => {
-      // Avoid duplicates - check if request already exists
-      const exists = prev.some((req) => req.id === event.data.id);
-      if (exists) return prev;
-
-      // Create new feature request object from event data
-      const newRequest: FeatureRequestWithDetails = {
-       id: event.data.id,
-       board_id: board?.id || "",
-       submitter_id: null,
-       submitter_email: null,
-       submitter_name: event.data.submitter_name,
-       title: event.data.title,
-       description: event.data.description,
-       status: event.data.status,
-       upvote_count: event.data.upvote_count || 0,
-       comment_count: event.data.comment_count || 0,
-       created_at: event.data.created_at,
-       updated_at: event.data.created_at,
-       upvotes: [],
-       board: board!,
-       comments: [],
-      };
-
-      return [newRequest, ...prev];
-     });
-     break;
-
-    case "feature_request_updated":
-     // Update existing feature request
-     setFeatureRequests((prev) =>
-      prev.map((req) =>
-       req.id === event.data.id
-        ? {
-           ...req,
-           title: event.data.title,
-           description: event.data.description,
-           status: event.data.status,
-           upvote_count: event.data.upvote_count,
-           comment_count: event.data.comment_count,
-           updated_at: event.data.updated_at,
-          }
-        : req
-      )
-     );
-
-     // Update selected request if it's the one being updated
-     if (selectedRequest && selectedRequest.id === event.data.id) {
-      setSelectedRequest((prev) =>
-       prev
-        ? {
-           ...prev,
-           title: event.data.title,
-           description: event.data.description,
-           status: event.data.status,
-           upvote_count: event.data.upvote_count,
-           comment_count: event.data.comment_count,
-           updated_at: event.data.updated_at,
-          }
-        : null
-      );
-     }
-     break;
-
-    case "feature_request_deleted":
-     // Remove feature request from the list
-     setFeatureRequests((prev) =>
-      prev.filter((req) => req.id !== event.data.id)
-     );
-
-     // Close modal if the deleted request is currently selected
-     if (selectedRequest && selectedRequest.id === event.data.id) {
-      setSelectedRequest(null);
-      setIsModalOpen(false);
-     }
-     break;
-
-    case "upvote_added":
-     // Update upvote count for the feature request
-     setFeatureRequests((prev) =>
-      prev.map((req) =>
-       req.id === event.data.feature_request_id
-        ? {...req, upvote_count: event.data.upvote_count}
-        : req
-      )
-     );
-     break;
-
-    case "upvote_removed":
-     // Update upvote count for the feature request
-     setFeatureRequests((prev) =>
-      prev.map((req) =>
-       req.id === event.data.feature_request_id
-        ? {...req, upvote_count: event.data.upvote_count}
-        : req
-      )
-     );
-     break;
-
-    case "comment_created":
-    case "comment_updated":
-    case "comment_deleted":
-     // Update comment count for the feature request
-     fetchFeatureRequests(true); // Refresh to get updated comment counts
-     break;
-   }
-  },
-  [board, selectedRequest, fetchFeatureRequests]
+  [slug, selectedStatus, searchTerm, sortBy, userId]
  );
 
  useEffect(() => {
@@ -322,9 +182,9 @@ export default function PublicBoardPage() {
   const optimisticRequest: FeatureRequestWithDetails = {
    id: `temp-${Date.now()}`,
    board_id: board?.id || "",
-   submitter_id: (session?.user as {id?: string})?.id || null,
-   submitter_email: session?.user?.email || null,
-   submitter_name: session?.user?.name || null,
+   submitter_id: userId || null,
+   submitter_email: user?.email || null,
+   submitter_name: user?.name || null,
    title: requestData.title,
    description: requestData.description,
    status: "NEW" as const,
@@ -339,8 +199,6 @@ export default function PublicBoardPage() {
 
   // Add optimistic request to the list
   setFeatureRequests((prev) => [optimisticRequest, ...prev]);
-
-  // Clear form and close modal immediately for better UX
   setSubmitForm({
    title: "",
    description: "",
@@ -348,17 +206,12 @@ export default function PublicBoardPage() {
   setShowSubmitForm(false);
 
   try {
-   const response = await fetch(`/api/boards/${slug}/requests`, {
-    method: "POST",
-    headers: {
-     "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestData),
+   const response = await saveFeatureRequest({
+    payload: requestData,
+    slug,
    });
 
-   const result = await response.json();
-
-   if (result.success) {
+   if (response.success) {
     // Replace optimistic request with real data
     fetchFeatureRequests(true); // Refresh the list with cache bypass
     toast.success("Feature request submitted successfully!");
@@ -368,7 +221,7 @@ export default function PublicBoardPage() {
      prev.filter((req) => req.id !== optimisticRequest.id)
     );
     setSubmitForm(requestData); // Restore form data
-    setSubmitError(result.error || "Failed to submit request");
+    setSubmitError(response.error || "Failed to submit request");
     setShowSubmitForm(true); // Reopen form to let user retry
    }
   } catch {
@@ -385,40 +238,31 @@ export default function PublicBoardPage() {
  };
 
  const handleUpvote = async (requestId: string) => {
-  executeWithAuth(async () => {
-   if (!(session?.user as {id?: string})?.id) return;
+  if (!userId) return;
 
-   try {
-    const response = await fetch(`/api/feature-requests/${requestId}/upvote`, {
-     method: "POST",
-     headers: {
-      "Content-Type": "application/json",
-     },
-     body: JSON.stringify({
-      userIdentifier: (session?.user as {id: string})?.id,
-     }),
-    });
+  try {
+   const result = await upvoteFeatureRequest({
+    requestId,
+    userId,
+   });
 
-    if (response.ok) {
-     const result = await response.json();
-
-     // Update local upvoted state immediately
-     setUpvotedRequests((prev) => {
-      const newSet = new Set(prev);
-      if (result.data.upvoted) {
-       newSet.add(requestId);
-      } else {
-       newSet.delete(requestId);
-      }
-      return newSet;
-     });
-
-     fetchFeatureRequests(true); // Refresh to show updated counts with cache bypass
+   // Update local upvoted state immediately
+   setUpvotedRequests((prev) => {
+    const newSet = new Set(prev);
+    if (result.data.upvoted) {
+     newSet.add(requestId);
+     setUpvoteCount(result.data.upvote_count);
+    } else {
+     newSet.delete(requestId);
+     setUpvoteCount(result.data.upvote_count);
     }
-   } catch (error) {
-    console.error("Error toggling upvote:", error);
-   }
-  });
+    return newSet;
+   });
+
+   fetchFeatureRequests(true);
+  } catch (error) {
+   console.error("Error toggling upvote:", error);
+  }
  };
 
  const handleRequestClick = (request: FeatureRequestWithDetails) => {
@@ -468,9 +312,7 @@ export default function PublicBoardPage() {
   }
 
   try {
-   const response = await fetch(`/api/feature-requests/${requestId}`, {
-    method: "DELETE",
-   });
+   const response = await deleteFeatureRequest({requestId});
 
    if (response.ok) {
     fetchFeatureRequests(true); // Refresh the list
@@ -487,23 +329,6 @@ export default function PublicBoardPage() {
 
  const handleCloseEditRequest = () => {
   setEditingRequest(null);
- };
-
- const getStatusBadge = (status: RequestStatus) => {
-  const statusOption = statusOptions.find((opt) => opt.value === status);
-  return (
-   <div className={`badge badge-sm ${statusOption?.color || "badge-ghost"}`}>
-    {statusOption?.label || status}
-   </div>
-  );
- };
-
- const formatDate = (date: string | Date) => {
-  return new Date(date).toLocaleDateString("en-US", {
-   year: "numeric",
-   month: "short",
-   day: "numeric",
-  });
  };
 
  const getBoardThemeStyles = () => {
@@ -538,19 +363,7 @@ export default function PublicBoardPage() {
    <div className="min-h-screen flex items-center justify-center bg-base-100">
     <div className="text-center">
      <div className="w-20 h-20 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
-      <svg
-       className="w-10 h-10 text-base-content/50"
-       fill="none"
-       stroke="currentColor"
-       viewBox="0 0 24 24"
-      >
-       <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.462-.881-6.065-2.33M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-       />
-      </svg>
+      <MdErrorOutline className="w-10 h-10 text-base-content/50" />
      </div>
      <h1 className="text-2xl font-bold mb-2">
       {t("publicBoard.boardNotFound")}
@@ -598,7 +411,7 @@ export default function PublicBoardPage() {
         <LanguageSwitcher />
 
         {/* Authentication Button */}
-        {session ? (
+        {user ? (
          <div className="dropdown dropdown-end">
           <div
            tabIndex={0}
@@ -612,7 +425,7 @@ export default function PublicBoardPage() {
            className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
           >
            <li className="menu-title">
-            <span>{session.user?.name || t("auth.user")}</span>
+            <span>{user?.name || t("auth.user")}</span>
            </li>
            <li>
             <a onClick={handleSignOut}>
@@ -752,19 +565,7 @@ export default function PublicBoardPage() {
      {featureRequests.length === 0 ? (
       <div className="text-center py-16">
        <div className="w-20 h-20 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
-        <svg
-         className="w-10 h-10 text-base-content/50"
-         fill="none"
-         stroke="currentColor"
-         viewBox="0 0 24 24"
-        >
-         <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-         />
-        </svg>
+        <HiOutlineBell className="w-10 h-10 text-base-content/50" />
        </div>
        <h3 className="text-xl font-semibold text-base-content mb-2">
         {t("publicBoard.noRequestsYet")}
@@ -817,19 +618,7 @@ export default function PublicBoardPage() {
 
       {submitError && (
        <div className="alert alert-error mb-4">
-        <svg
-         xmlns="http://www.w3.org/2000/svg"
-         className="stroke-current shrink-0 h-6 w-6"
-         fill="none"
-         viewBox="0 0 24 24"
-        >
-         <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-         />
-        </svg>
+        <VscError />
         <span>{submitError}</span>
        </div>
       )}
@@ -870,24 +659,26 @@ export default function PublicBoardPage() {
        </div>
 
        {/* Show user info */}
-       {session && (
+       {user && (
         <div className="flex items-center gap-3 mb-6 p-3 bg-base-100 rounded-lg">
          <div className="avatar">
           <div className="w-8 h-8 rounded-full">
-           <img
+           <Image
             src={
-             session?.user?.image ||
+             user?.image ||
              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-              session?.user?.name || "User"
+              user?.name || "User"
              )}&background=random`
             }
             alt="Profile"
+            width={32}
+            height={32}
            />
           </div>
          </div>
          <div>
-          <p className="font-medium text-sm">{session?.user?.name}</p>
-          <p className="text-xs text-base-content/60">{session?.user?.email}</p>
+          <p className="font-medium text-sm">{user?.name}</p>
+          <p className="text-xs text-base-content/60">{user?.email}</p>
          </div>
         </div>
        )}
@@ -926,9 +717,7 @@ export default function PublicBoardPage() {
      request={selectedRequest}
      isOpen={isModalOpen}
      onClose={handleCloseModal}
-     onUpvote={handleUpvote}
-     userIdentifier={userIdentifier}
-     isAdmin={(session?.user as {id?: string})?.id === board?.creator_id}
+     isAdmin={userId === board?.creator_id}
      onStatusUpdate={handleStatusUpdate}
     />
    )}

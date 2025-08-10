@@ -32,7 +32,10 @@ export default async function LocaleLayout({
 
  return (
   <html lang={locale} data-theme="light">
-   <body className={`${inter.variable} font-sans antialiased`}>
+   <body
+    className={`${inter.variable} font-sans antialiased`}
+    suppressHydrationWarning={true}
+   >
     <SessionProvider>
      <NextIntlClientProvider>{children}</NextIntlClientProvider>
     </SessionProvider>

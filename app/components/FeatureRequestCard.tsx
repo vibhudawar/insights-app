@@ -1,7 +1,6 @@
 "use client";
 
 import {useState} from "react";
-import {useSession} from "next-auth/react";
 import {useTranslations} from "next-intl";
 import {FaChevronUp, FaComment, FaCrown} from "react-icons/fa";
 import {FeatureRequestWithDetails} from "@/types";
@@ -31,9 +30,10 @@ export function FeatureRequestCard({
  const t = useTranslations();
  const [isDeleting, setIsDeleting] = useState(false);
  const user = useCurrentUser();
+ const userId = user?.id;
 
- const isOwnRequest = user?.id === request.submitter_id;
- const isBoardOwner = user?.id === boardCreatorId;
+ const isOwnRequest = userId === request.submitter_id;
+ const isBoardOwner = userId === boardCreatorId;
  const canModify = isOwnRequest || isBoardOwner;
  const hasUpvoted = userUpvotes.has(request.id);
 
