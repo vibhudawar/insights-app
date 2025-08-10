@@ -3,8 +3,9 @@
 import {useState} from "react";
 import {useSession} from "next-auth/react";
 import {useTranslations} from "next-intl";
-import {FaChevronUp, FaEdit, FaTrash, FaComment, FaCrown} from "react-icons/fa";
+import {FaChevronUp, FaComment, FaCrown} from "react-icons/fa";
 import {FeatureRequestWithDetails} from "@/types";
+import {useCurrentUser} from "@/hooks/useCurrentUser";
 
 interface FeatureRequestCardProps {
  request: FeatureRequestWithDetails;
@@ -27,13 +28,12 @@ export function FeatureRequestCard({
  userUpvotes,
  isClickable = true,
 }: FeatureRequestCardProps) {
- const {data: session} = useSession();
  const t = useTranslations();
  const [isDeleting, setIsDeleting] = useState(false);
+ const user = useCurrentUser();
 
- const isOwnRequest =
-  (session?.user as {id: string})?.id === request.submitter_id;
- const isBoardOwner = (session?.user as {id: string})?.id === boardCreatorId;
+ const isOwnRequest = user?.id === request.submitter_id;
+ const isBoardOwner = user?.id === boardCreatorId;
  const canModify = isOwnRequest || isBoardOwner;
  const hasUpvoted = userUpvotes.has(request.id);
 
@@ -144,12 +144,6 @@ export function FeatureRequestCard({
           </div>
          )}
 
-         {isOwnRequest && (
-          <div className="badge badge-sm badge-primary">
-           <span className="text-xs">{t("request.yourPost")}</span>
-          </div>
-         )}
-
          {(request as FeatureRequestWithDetails & {is_edited?: boolean})
           .is_edited && (
           <div className="badge badge-sm badge-ghost">
@@ -170,22 +164,18 @@ export function FeatureRequestCard({
 
          <button
           onClick={handleEditClick}
-          className="btn btn-ghost btn-xs"
+          className="btn btn-soft btn-primary btn-sm"
           disabled={isDeleting}
          >
-          <FaEdit className="w-3 h-3" />
+          UPDATE
          </button>
 
          <button
           onClick={handleDeleteClick}
-          className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+          className="btn btn-soft btn-error btn-sm"
           disabled={isDeleting}
          >
-          {isDeleting ? (
-           <span className="loading loading-spinner loading-xs"></span>
-          ) : (
-           <FaTrash className="w-3 h-3" />
-          )}
+          DELETE
          </button>
         </div>
        )}

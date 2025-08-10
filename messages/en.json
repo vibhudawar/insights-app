@@ -6,6 +6,7 @@
     "analytics": "Analytics"
   },
   "board": {
+    "basicSettings": "Basic Settings",
     "title": "Board Title",
     "description": "Description", 
     "publicBoard": "Public Board",
@@ -19,10 +20,11 @@
     "boardDeleted": "Board deleted successfully!",
     "failedToUpdate": "Failed to update board. Please try again.",
     "failedToDelete": "Failed to delete board. Please try again.",
-    "confirmDelete": "Are you sure you want to delete \"{title}\"? This action cannot be undone and will delete all feature requests associated with this board.",
+    "confirmDelete": "Are you sure you want to delete \"{title}\"? This action cannot be undone and will delete all feature requests associated with this board.",    
     "boardUrl": "Board URL",
     "onlyLowercase": "Only lowercase letters, numbers, and dashes",
-    "allowPublicSubmissions": "Allow anyone to view and submit feature requests"
+    "allowPublicSubmissions": "Allow anyone to view and submit feature requests",
+    "deleting": "Deleting..."
   },
   "theme": {
     "customization": "Theme Customization",

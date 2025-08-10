@@ -7,6 +7,10 @@ import {useTranslations} from "next-intl";
 import {DashboardLayout} from "@/components/layout/DashboardLayout";
 import {LanguageSwitcher} from "@/components/LanguageSwitcher";
 import {BoardWithRequests} from "@/types";
+import {FaRegCopy} from "react-icons/fa";
+import {RiDeleteBinLine} from "react-icons/ri";
+import {toast} from "@/utils/toast";
+import {APP_URL} from "@/constants";
 
 interface ThemeConfig {
  primaryColor: string;
@@ -22,6 +26,7 @@ export default function EditBoardPage() {
  const [board, setBoard] = useState<BoardWithRequests | null>(null);
  const [isLoading, setIsLoading] = useState(true);
  const [isSaving, setIsSaving] = useState(false);
+ const [isDeleting, setIsDeleting] = useState(false);
  const [error, setError] = useState("");
  const [message, setMessage] = useState("");
  const [messageType, setMessageType] = useState<"success" | "error">("success");
@@ -40,8 +45,6 @@ export default function EditBoardPage() {
   backgroundColor: "#ffffff",
   textColor: "#1f2937",
  });
-
- const [previewMode, setPreviewMode] = useState(false);
 
  useEffect(() => {
   const fetchBoard = async () => {
@@ -96,6 +99,23 @@ export default function EditBoardPage() {
   setTimeout(() => setMessage(""), 5000);
  };
 
+ const copyToClipboard = async () => {
+  const fullUrl = `${APP_URL}/b/${boardForm.slug}`;
+  try {
+   await navigator.clipboard.writeText(fullUrl);
+   toast.success("URL copied to clipboard!");
+  } catch (err) {
+   // Fallback for older browsers
+   const textArea = document.createElement("textarea");
+   textArea.value = fullUrl;
+   document.body.appendChild(textArea);
+   textArea.select();
+   document.execCommand("copy");
+   document.body.removeChild(textArea);
+   toast.success("URL copied to clipboard!");
+  }
+ };
+
  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setIsSaving(true);
@@ -138,7 +158,7 @@ export default function EditBoardPage() {
    return;
   }
 
-  setIsSaving(true);
+  setIsDeleting(true);
   try {
    const response = await fetch(`/api/boards/${params.slug}/board`, {
     method: "DELETE",
@@ -156,7 +176,7 @@ export default function EditBoardPage() {
   } catch (err) {
    showMessage(t("board.failedToDelete"), "error");
   } finally {
-   setIsSaving(false);
+   setIsDeleting(false);
   }
  };
 
@@ -305,9 +325,7 @@ export default function EditBoardPage() {
        {/* Basic Settings */}
        <div className="card bg-base-100 shadow">
         <div className="card-body">
-         <h2 className="card-title mb-4">
-          {t("board.basicSettings", {default: "Basic Settings"})}
-         </h2>
+         <h2 className="card-title mb-4">{t("board.basicSettings")}</h2>
 
          <form onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -357,13 +375,19 @@ export default function EditBoardPage() {
               type="text"
               className="grow"
               value={boardForm.slug}
-              onChange={(e) =>
-               setBoardForm((prev) => ({...prev, slug: e.target.value}))
-              }
               pattern="[a-z0-9-]+"
               title="Only lowercase letters, numbers, and dashes"
               placeholder={t("form.placeholder.boardSlug")}
+              readOnly
              />
+             <button
+              type="button"
+              className="btn btn-soft btn-primary"
+              onClick={copyToClipboard}
+              disabled={!boardForm.slug}
+             >
+              <FaRegCopy className="w-4 h-4" />
+             </button>
             </label>
             <label className="label">
              <span className="label-text-alt">{t("board.onlyLowercase")}</span>
@@ -401,13 +425,6 @@ export default function EditBoardPage() {
          <div className="flex items-center justify-between mb-4">
           <h2 className="card-title">{t("theme.customization")}</h2>
           <div className="flex gap-2">
-           <button
-            type="button"
-            onClick={() => setPreviewMode(!previewMode)}
-            className="btn btn-sm btn-outline"
-           >
-            {previewMode ? t("theme.hidePreview") : t("theme.showPreview")}
-           </button>
            <button
             type="button"
             onClick={resetTheme}
@@ -520,7 +537,7 @@ export default function EditBoardPage() {
         <button
          onClick={handleSubmit}
          className="btn btn-primary w-full"
-         disabled={isSaving}
+         disabled={isSaving || isDeleting}
         >
          {isSaving ? (
           <>
@@ -537,28 +554,16 @@ export default function EditBoardPage() {
         <button
          onClick={handleDeleteBoard}
          className="btn btn-error btn-outline w-full"
-         disabled={isSaving}
+         disabled={isSaving || isDeleting}
         >
-         {isSaving ? (
+         {isDeleting ? (
           <>
            <span className="loading loading-spinner loading-sm"></span>
-           {t("board.deleting", {default: "Deleting..."})}
+           {t("board.deleting")}
           </>
          ) : (
           <>
-           <svg
-            className="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-           >
-            <path
-             strokeLinecap="round"
-             strokeLinejoin="round"
-             strokeWidth={2}
-             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
-           </svg>
+           <RiDeleteBinLine className="w-4 h-4 mr-2" />
            {t("board.deleteBoard")}
           </>
          )}

@@ -23,8 +23,8 @@ export const authOptions = {
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async session({ session, token }: { session: any; token: any }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
+      if (token.id && session.user) {
+        session.user.id = token.id;
       }
       return session;
     },
