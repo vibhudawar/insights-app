@@ -27,6 +27,7 @@
     "deleting": "Deleting..."
   },
   "theme": {
+    "select": "Select",
     "customization": "Theme Customization",
     "primaryColor": "Primary Color", 
     "backgroundColor": "Background Color",
@@ -34,7 +35,9 @@
     "reset": "Reset",
     "showPreview": "Show Preview",
     "hidePreview": "Hide Preview",
-    "livePreview": "Live Preview"
+    "livePreview": "Live Preview",
+    "setCustomTheme": "Set Custom Theme",
+    "presetTheme": "Preset Themes"
   },
   "form": {
     "required": "*",

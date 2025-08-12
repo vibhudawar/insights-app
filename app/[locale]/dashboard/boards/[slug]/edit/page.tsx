@@ -10,7 +10,7 @@ import {BoardWithRequests} from "@/types";
 import {FaRegCopy} from "react-icons/fa";
 import {RiDeleteBinLine} from "react-icons/ri";
 import {toast} from "@/utils/toast";
-import {APP_URL} from "@/constants";
+import {APP_URL, daisyThemes} from "@/constants";
 
 interface ThemeConfig {
  primaryColor: string;
@@ -46,6 +46,10 @@ export default function EditBoardPage() {
   textColor: "#1f2937",
  });
 
+ // Theme selection state
+ const [selectedTheme, setSelectedTheme] = useState<string>("");
+ const [showCustomTheme, setShowCustomTheme] = useState<boolean>(true);
+
  useEffect(() => {
   const fetchBoard = async () => {
    try {
@@ -69,11 +73,25 @@ export default function EditBoardPage() {
         typeof boardData.theme_config === "string"
          ? JSON.parse(boardData.theme_config)
          : boardData.theme_config;
-       setThemeConfig({
-        primaryColor: theme.primaryColor || "#570df8",
-        backgroundColor: theme.backgroundColor || "#ffffff",
-        textColor: theme.textColor || "#1f2937",
-       });
+
+       // Check if it's a DaisyUI preset theme or custom theme
+       if (typeof theme === "string" && daisyThemes.includes(theme)) {
+        setSelectedTheme(theme);
+        setShowCustomTheme(false);
+       } else if (
+        theme.primaryColor ||
+        theme.backgroundColor ||
+        theme.textColor
+       ) {
+        // Custom theme config
+        setThemeConfig({
+         primaryColor: theme.primaryColor || "#570df8",
+         backgroundColor: theme.backgroundColor || "#ffffff",
+         textColor: theme.textColor || "#1f2937",
+        });
+        setSelectedTheme("");
+        setShowCustomTheme(true);
+       }
       } catch {
        // Use default theme if parsing fails
       }
@@ -128,7 +146,7 @@ export default function EditBoardPage() {
     },
     body: JSON.stringify({
      ...boardForm,
-     theme_config: themeConfig,
+     theme_config: selectedTheme ? selectedTheme : themeConfig,
     }),
    });
 
@@ -419,118 +437,210 @@ export default function EditBoardPage() {
         </div>
        </div>
 
-       {/* Theme Customization */}
+       {/* Theme Selection */}
        <div className="card bg-base-100 shadow">
         <div className="card-body">
-         <div className="flex items-center justify-between mb-4">
-          <h2 className="card-title">{t("theme.customization")}</h2>
-          <div className="flex gap-2">
+         <h2 className="card-title mb-4">{t("theme.customization")}</h2>
+
+         <div className="flex flex-row gap-4 justify-center items-center mb-4">
+          {/* DaisyUI Theme Dropdown */}
+          <div className="flex-1">
+           <label className="label">
+            <span className="label-text font-medium">
+             {t("theme.presetTheme")}
+            </span>
+           </label>
+           <div className="dropdown w-full">
+            <div
+             tabIndex="0"
+             role="button"
+             className="btn btn-outline w-full justify-between"
+            >
+             {selectedTheme
+              ? selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1)
+              : t("theme.presetTheme")}
+             <svg
+              width="12px"
+              height="12px"
+              className="inline-block h-2 w-2 fill-current opacity-60"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 2048 2048"
+             >
+              <path d="M1799 349l242 241-1017 1017L7 590l242-241 775 775 775-775z"></path>
+             </svg>
+            </div>
+            <ul
+             tabIndex="0"
+             className="dropdown-content bg-base-300 rounded-box z-[1] w-full max-h-60 overflow-y-auto p-2 shadow-2xl"
+            >
+             <li>
+              <button
+               type="button"
+               className="btn btn-sm btn-ghost justify-start w-full text-left"
+               onClick={() => {
+                setSelectedTheme("");
+                setShowCustomTheme(true);
+                (document.activeElement as HTMLElement)?.blur();
+               }}
+              >
+               {t("theme.select")}
+              </button>
+             </li>
+             {daisyThemes.map((theme) => (
+              <li key={theme}>
+               <button
+                type="button"
+                className="btn btn-sm btn-ghost justify-start w-full text-left"
+                onClick={() => {
+                 setSelectedTheme(theme);
+                 setShowCustomTheme(false);
+                 (document.activeElement as HTMLElement)?.blur();
+                }}
+               >
+                {theme.charAt(0).toUpperCase() + theme.slice(1)}
+               </button>
+              </li>
+             ))}
+            </ul>
+           </div>
+          </div>
+
+          {/* Set Custom Theme Button */}
+          <div className="flex-shrink-0">
+           <label className="label">
+            <span className="label-text font-medium opacity-0">Action</span>
+           </label>
            <button
             type="button"
-            onClick={resetTheme}
-            className="btn btn-sm btn-ghost"
+            className={`btn ${showCustomTheme ? "btn-primary" : "btn-outline"}`}
+            onClick={() => {
+             setShowCustomTheme(!showCustomTheme);
+             if (!showCustomTheme) {
+              setSelectedTheme("");
+             }
+            }}
            >
-            {t("theme.reset")}
+            {t("theme.setCustomTheme")}
            </button>
           </div>
          </div>
-
-         <div className="space-y-4">
-          <fieldset className="fieldset">
-           <label className="label">
-            <span className="label-text font-medium">
-             {t("theme.primaryColor")}
-            </span>
-           </label>
-           <div className="flex items-center gap-3">
-            <input
-             type="color"
-             className="w-12 h-10 rounded border border-base-300"
-             value={themeConfig.primaryColor}
-             onChange={(e) =>
-              setThemeConfig((prev) => ({
-               ...prev,
-               primaryColor: e.target.value,
-              }))
-             }
-            />
-            <input
-             type="text"
-             className="input input-bordered flex-1"
-             value={themeConfig.primaryColor}
-             onChange={(e) =>
-              setThemeConfig((prev) => ({
-               ...prev,
-               primaryColor: e.target.value,
-              }))
-             }
-             placeholder="#570df8"
-            />
-           </div>
-          </fieldset>
-
-          <fieldset className="fieldset">
-           <label className="label">
-            <span className="label-text font-medium">
-             {t("theme.backgroundColor")}
-            </span>
-           </label>
-           <div className="flex items-center gap-3">
-            <input
-             type="color"
-             className="w-12 h-10 rounded border border-base-300"
-             value={themeConfig.backgroundColor}
-             onChange={(e) =>
-              setThemeConfig((prev) => ({
-               ...prev,
-               backgroundColor: e.target.value,
-              }))
-             }
-            />
-            <input
-             type="text"
-             className="input input-bordered flex-1"
-             value={themeConfig.backgroundColor}
-             onChange={(e) =>
-              setThemeConfig((prev) => ({
-               ...prev,
-               backgroundColor: e.target.value,
-              }))
-             }
-             placeholder="#ffffff"
-            />
-           </div>
-          </fieldset>
-
-          <fieldset className="fieldset">
-           <label className="label">
-            <span className="label-text font-medium">
-             {t("theme.textColor")}
-            </span>
-           </label>
-           <div className="flex items-center gap-3">
-            <input
-             type="color"
-             className="w-12 h-10 rounded border border-base-300"
-             value={themeConfig.textColor}
-             onChange={(e) =>
-              setThemeConfig((prev) => ({...prev, textColor: e.target.value}))
-             }
-            />
-            <input
-             type="text"
-             className="input input-bordered flex-1"
-             value={themeConfig.textColor}
-             onChange={(e) =>
-              setThemeConfig((prev) => ({...prev, textColor: e.target.value}))
-             }
-             placeholder="#1f2937"
-            />
-           </div>
-          </fieldset>
-         </div>
         </div>
        </div>
+
+       {/* Theme Customization */}
+       {showCustomTheme && (
+        <div className="card bg-base-100 shadow">
+         <div className="card-body">
+          <div className="flex items-center justify-between mb-4">
+           <h2 className="card-title">{t("theme.customization")}</h2>
+           <div className="flex gap-2">
+            <button
+             type="button"
+             onClick={resetTheme}
+             className="btn btn-sm btn-ghost"
+            >
+             {t("theme.reset")}
+            </button>
+           </div>
+          </div>
+
+          <div className="space-y-4">
+           <fieldset className="fieldset">
+            <label className="label">
+             <span className="label-text font-medium">
+              {t("theme.primaryColor")}
+             </span>
+            </label>
+            <div className="flex items-center gap-3">
+             <input
+              type="color"
+              className="w-12 h-10 rounded border border-base-300"
+              value={themeConfig.primaryColor}
+              onChange={(e) =>
+               setThemeConfig((prev) => ({
+                ...prev,
+                primaryColor: e.target.value,
+               }))
+              }
+             />
+             <input
+              type="text"
+              className="input input-bordered flex-1"
+              value={themeConfig.primaryColor}
+              onChange={(e) =>
+               setThemeConfig((prev) => ({
+                ...prev,
+                primaryColor: e.target.value,
+               }))
+              }
+              placeholder="#570df8"
+             />
+            </div>
+           </fieldset>
+
+           <fieldset className="fieldset">
+            <label className="label">
+             <span className="label-text font-medium">
+              {t("theme.backgroundColor")}
+             </span>
+            </label>
+            <div className="flex items-center gap-3">
+             <input
+              type="color"
+              className="w-12 h-10 rounded border border-base-300"
+              value={themeConfig.backgroundColor}
+              onChange={(e) =>
+               setThemeConfig((prev) => ({
+                ...prev,
+                backgroundColor: e.target.value,
+               }))
+              }
+             />
+             <input
+              type="text"
+              className="input input-bordered flex-1"
+              value={themeConfig.backgroundColor}
+              onChange={(e) =>
+               setThemeConfig((prev) => ({
+                ...prev,
+                backgroundColor: e.target.value,
+               }))
+              }
+              placeholder="#ffffff"
+             />
+            </div>
+           </fieldset>
+
+           <fieldset className="fieldset">
+            <label className="label">
+             <span className="label-text font-medium">
+              {t("theme.textColor")}
+             </span>
+            </label>
+            <div className="flex items-center gap-3">
+             <input
+              type="color"
+              className="w-12 h-10 rounded border border-base-300"
+              value={themeConfig.textColor}
+              onChange={(e) =>
+               setThemeConfig((prev) => ({...prev, textColor: e.target.value}))
+              }
+             />
+             <input
+              type="text"
+              className="input input-bordered flex-1"
+              value={themeConfig.textColor}
+              onChange={(e) =>
+               setThemeConfig((prev) => ({...prev, textColor: e.target.value}))
+              }
+              placeholder="#1f2937"
+             />
+            </div>
+           </fieldset>
+          </div>
+         </div>
+        </div>
+       )}
 
        {/* Action Buttons */}
        <div className="space-y-3">
@@ -580,65 +690,108 @@ export default function EditBoardPage() {
          {/* Preview Container */}
          <div
           className="border-2 border-dashed border-base-300 rounded-lg p-6 min-h-[400px]"
-          style={{
-           backgroundColor: previewTheme.backgroundColor,
-           color: previewTheme.textColor,
-          }}
+          data-theme={selectedTheme || undefined}
+          style={
+           selectedTheme
+            ? {}
+            : {
+               backgroundColor: previewTheme.backgroundColor,
+               color: previewTheme.textColor,
+              }
+          }
          >
           {/* Mock Board Header */}
           <div
-           className="rounded-lg p-6 mb-6"
-           style={{
-            backgroundColor: `${previewTheme.primaryColor}15`,
-            borderColor: `${previewTheme.primaryColor}30`,
-            border: "1px solid",
-           }}
+           className={
+            selectedTheme
+             ? "rounded-lg p-6 mb-6 bg-base-200 border border-base-300"
+             : "rounded-lg p-6 mb-6"
+           }
+           style={
+            selectedTheme
+             ? {}
+             : {
+                backgroundColor: `${previewTheme.primaryColor}15`,
+                borderColor: `${previewTheme.primaryColor}30`,
+                border: "1px solid",
+               }
+           }
           >
            <div className="flex items-center justify-between mb-4">
             <h1
-             className="text-2xl font-bold"
-             style={{color: previewTheme.textColor}}
+             className={
+              selectedTheme
+               ? "text-2xl font-bold text-base-content"
+               : "text-2xl font-bold"
+             }
+             style={selectedTheme ? {} : {color: previewTheme.textColor}}
             >
              {boardForm.title || t("board.title")}
             </h1>
             <div
-             className="badge badge-sm"
-             style={{
-              backgroundColor: previewTheme.primaryColor,
-              color: "white",
-              borderColor: previewTheme.primaryColor,
-             }}
+             className={
+              selectedTheme ? "badge badge-sm badge-primary" : "badge badge-sm"
+             }
+             style={
+              selectedTheme
+               ? {}
+               : {
+                  backgroundColor: previewTheme.primaryColor,
+                  color: "white",
+                  borderColor: previewTheme.primaryColor,
+                 }
+             }
             >
              {t("board.publicBoard")}
             </div>
            </div>
            {boardForm.description && (
             <p
-             className="text-lg opacity-80"
-             style={{color: previewTheme.textColor}}
+             className={
+              selectedTheme
+               ? "text-lg opacity-80 text-base-content"
+               : "text-lg opacity-80"
+             }
+             style={selectedTheme ? {} : {color: previewTheme.textColor}}
             >
              {boardForm.description}
             </p>
            )}
            <button
-            className="btn btn-sm mt-4"
-            style={{
-             backgroundColor: previewTheme.primaryColor,
-             borderColor: previewTheme.primaryColor,
-             color: "white",
-            }}
+            className={
+             selectedTheme ? "btn btn-sm btn-primary mt-4" : "btn btn-sm mt-4"
+            }
+            style={
+             selectedTheme
+              ? {}
+              : {
+                 backgroundColor: previewTheme.primaryColor,
+                 borderColor: previewTheme.primaryColor,
+                 color: "white",
+                }
+            }
            >
             Submit Request
            </button>
           </div>
 
           {/* Mock Feature Request */}
-          <div className="bg-white/50 rounded-lg p-4 shadow-sm">
+          <div
+           className={
+            selectedTheme
+             ? "bg-base-100 rounded-lg p-4 shadow-sm"
+             : "bg-white/50 rounded-lg p-4 shadow-sm"
+           }
+          >
            <div className="flex items-start gap-4">
             <div className="flex flex-col items-center">
              <button
-              className="btn btn-ghost btn-sm"
-              style={{color: previewTheme.primaryColor}}
+              className={
+               selectedTheme
+                ? "btn btn-ghost btn-sm text-primary"
+                : "btn btn-ghost btn-sm"
+              }
+              style={selectedTheme ? {} : {color: previewTheme.primaryColor}}
              >
               <svg
                className="w-4 h-4"
@@ -654,24 +807,45 @@ export default function EditBoardPage() {
                />
               </svg>
              </button>
-             <span className="text-xs font-bold">42</span>
+             <span
+              className={
+               selectedTheme
+                ? "text-xs font-bold text-base-content"
+                : "text-xs font-bold"
+              }
+             >
+              42
+             </span>
             </div>
             <div className="flex-1">
              <h3
-              className="font-semibold mb-1"
-              style={{color: previewTheme.textColor}}
+              className={
+               selectedTheme
+                ? "font-semibold mb-1 text-base-content"
+                : "font-semibold mb-1"
+              }
+              style={selectedTheme ? {} : {color: previewTheme.textColor}}
              >
               Sample Feature Request
              </h3>
              <p
-              className="text-sm opacity-70 mb-2"
-              style={{color: previewTheme.textColor}}
+              className={
+               selectedTheme
+                ? "text-sm opacity-70 mb-2 text-base-content"
+                : "text-sm opacity-70 mb-2"
+              }
+              style={selectedTheme ? {} : {color: previewTheme.textColor}}
              >
-              This is how a feature request would look with your custom theme.
+              This is how a feature request would look with your{" "}
+              {selectedTheme ? "selected" : "custom"} theme.
              </p>
              <div
-              className="text-xs opacity-60"
-              style={{color: previewTheme.textColor}}
+              className={
+               selectedTheme
+                ? "text-xs opacity-60 text-base-content"
+                : "text-xs opacity-60"
+              }
+              style={selectedTheme ? {} : {color: previewTheme.textColor}}
              >
               By User • 2 days ago
              </div>

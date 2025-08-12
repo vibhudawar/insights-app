@@ -1,4 +1,19 @@
-import {FeatureRequestWithDetails} from "@/types";
+export const getDashboardStats = async () => {
+ const response = await fetch("/api/dashboard/stats");
+ if (!response.ok) {
+  throw new Error("Failed to fetch dashboard stats");
+ }
+ return response.json();
+};
+
+export const getBoards = async (limit?: number) => {
+ const limitParam = limit ? `?limit=${limit}` : "";
+ const response = await fetch(`/api/boards${limitParam}`);
+ if (!response.ok) {
+  throw new Error("Failed to fetch boards");
+ }
+ return response.json();
+};
 
 export const getBoard = async (slug: string) => {
  const response = await fetch(`/api/boards/slug/${slug}`);

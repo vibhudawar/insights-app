@@ -10,6 +10,7 @@ import {
  FeatureRequestWithDetails,
  RequestStatus,
 } from "@/types";
+
 import {FeatureRequestModal} from "@/components/FeatureRequestModal";
 import {FeatureRequestCard} from "@/components/FeatureRequestCard";
 import {EditFeatureRequestModal} from "@/components/EditFeatureRequestModal";
@@ -34,6 +35,14 @@ import {
  saveFeatureRequest,
  upvoteFeatureRequest,
 } from "@/frontend apis/Feature Requests/BoardApi";
+import {FaPlus} from "react-icons/fa6";
+import {IoSearch} from "react-icons/io5";
+import {daisyThemes} from "@/constants";
+interface CustomThemeStyles {
+  primaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+ }
 
 export default function PublicBoardPage() {
  const params = useParams();
@@ -331,8 +340,10 @@ export default function PublicBoardPage() {
   setEditingRequest(null);
  };
 
- const getBoardThemeStyles = () => {
-  if (!board?.theme_config) return {};
+ 
+
+ const getBoardTheme = (): { type: 'default' | 'daisy' | 'custom', data: string | CustomThemeStyles | null } => {
+  if (!board?.theme_config) return { type: 'default', data: null };
 
   try {
    const themeConfig =
@@ -340,13 +351,29 @@ export default function PublicBoardPage() {
      ? JSON.parse(board.theme_config)
      : board.theme_config;
 
-   return {
-    primaryColor: themeConfig.primaryColor || "",
-    backgroundColor: themeConfig.backgroundColor || "",
-    textColor: themeConfig.textColor || "",
-   };
+   // Check if it's a DaisyUI preset theme (string)
+   if (typeof themeConfig === "string" && daisyThemes.includes(themeConfig)) {
+    return {
+     type: 'daisy',
+     data: themeConfig
+    };
+   }
+
+   // Check if it's a custom theme (object with color properties)
+   if (themeConfig && (themeConfig.primaryColor || themeConfig.backgroundColor || themeConfig.textColor)) {
+    return {
+     type: 'custom',
+     data: {
+      primaryColor: themeConfig.primaryColor || "",
+      backgroundColor: themeConfig.backgroundColor || "",
+      textColor: themeConfig.textColor || "",
+     } as CustomThemeStyles
+    };
+   }
+
+   return { type: 'default', data: null };
   } catch {
-   return {};
+   return { type: 'default', data: null };
   }
  };
 
@@ -379,31 +406,45 @@ export default function PublicBoardPage() {
   );
  }
 
- const themeStyles = getBoardThemeStyles();
+ const boardTheme = getBoardTheme();
+ const themeStyles: CustomThemeStyles = boardTheme.type === 'custom' && boardTheme.data 
+  ? boardTheme.data as CustomThemeStyles 
+  : {
+   primaryColor: "",
+   backgroundColor: "",
+   textColor: "",
+  };
 
  return (
   <div
    className="min-h-screen bg-base-100"
-   style={{backgroundColor: themeStyles.backgroundColor}}
+   data-theme={boardTheme.type === 'daisy' ? boardTheme.data : undefined}
+   style={boardTheme.type === 'custom' ? {backgroundColor: themeStyles.backgroundColor} : {}}
   >
    {/* Header */}
    <div
-    className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-300"
-    style={{
+    className={boardTheme.type === 'daisy' 
+     ? "bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-300"
+     : "bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-300"
+    }
+    style={boardTheme.type === 'custom' ? {
      backgroundColor: themeStyles.primaryColor
       ? `${themeStyles.primaryColor}15`
       : undefined,
      borderColor: themeStyles.primaryColor
       ? `${themeStyles.primaryColor}30`
       : undefined,
-    }}
+    } : {}}
    >
     <div className="container mx-auto px-4 py-8">
      <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-4">
        <h1
-        className="text-4xl font-bold text-base-content"
-        style={{color: themeStyles.textColor}}
+        className={boardTheme.type === 'daisy' 
+         ? "text-4xl font-bold text-base-content"
+         : "text-4xl font-bold text-base-content"
+        }
+        style={boardTheme.type === 'custom' ? {color: themeStyles.textColor} : {}}
        >
         {board.title}
        </h1>
@@ -443,11 +484,14 @@ export default function PublicBoardPage() {
         )}
 
         <div
-         className="badge badge-sm badge-primary"
-         style={{
+         className={boardTheme.type === 'daisy' 
+          ? "badge badge-sm badge-primary"
+          : "badge badge-sm badge-primary"
+         }
+         style={boardTheme.type === 'custom' ? {
           backgroundColor: themeStyles.primaryColor,
           borderColor: themeStyles.primaryColor,
-         }}
+         } : {}}
         >
          {t("board.publicBoard")}
         </div>
@@ -455,12 +499,15 @@ export default function PublicBoardPage() {
       </div>
       {board.description && (
        <p
-        className="text-lg text-base-content/80 mb-6"
-        style={{
+        className={boardTheme.type === 'daisy' 
+         ? "text-lg text-base-content/80 mb-6"
+         : "text-lg text-base-content/80 mb-6"
+        }
+        style={boardTheme.type === 'custom' ? {
          color: themeStyles.textColor
           ? `${themeStyles.textColor}CC`
           : undefined,
-        }}
+        } : {}}
        >
         {board.description}
        </p>
@@ -470,31 +517,24 @@ export default function PublicBoardPage() {
       <div className="flex flex-wrap gap-3">
        <button
         onClick={() => executeWithAuth(() => setShowSubmitForm(true))}
-        className="btn btn-primary"
-        style={{
+        className={boardTheme.type === 'daisy' 
+         ? "btn btn-primary"
+         : "btn btn-primary"
+        }
+        style={boardTheme.type === 'custom' ? {
          backgroundColor: themeStyles.primaryColor,
          borderColor: themeStyles.primaryColor,
-        }}
+        } : {}}
        >
-        <svg
-         className="w-4 h-4 mr-2"
-         fill="none"
-         stroke="currentColor"
-         viewBox="0 0 24 24"
-        >
-         <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 4v16m8-8H4"
-         />
-        </svg>
+        <FaPlus />
         {t("publicBoard.submitRequest")}
        </button>
        <div className="stats shadow-sm bg-base-100">
-        <div className="stat py-2 px-4">
+        <div className="stat py-2 px-4 flex items-center justify-between">
+         <div className="stat-desc text-sm">
+          {t("publicBoard.totalRequests")}
+         </div>
          <div className="stat-value text-sm">{featureRequests.length}</div>
-         <div className="stat-desc">{t("publicBoard.totalRequests")}</div>
         </div>
        </div>
       </div>
@@ -508,7 +548,7 @@ export default function PublicBoardPage() {
      <div className="flex flex-col md:flex-row gap-4 mb-6">
       {/* Search */}
       <div className="form-control flex-1">
-       <div className="input-group">
+       <div className="input-group flex items-center">
         <input
          type="text"
          placeholder={t("publicBoard.searchRequests")}
@@ -516,20 +556,8 @@ export default function PublicBoardPage() {
          value={searchTerm}
          onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <span className="btn btn-square btn-ghost">
-         <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-         >
-          <path
-           strokeLinecap="round"
-           strokeLinejoin="round"
-           strokeWidth={2}
-           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-         </svg>
+        <span className="btn btn-circle btn-ghost">
+         <IoSearch className="w-4 h-4" />
         </span>
        </div>
       </div>
