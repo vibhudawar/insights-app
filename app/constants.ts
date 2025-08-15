@@ -1,4 +1,4 @@
-export const APP_URL = "http://localhost:3000";
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export const daisyThemes = [
   "light", "dark", "cupcake", "bumblebee", "emerald", "corporate", "synthwave", 

@@ -214,7 +214,7 @@ export default function NewBoardPage() {
        <div className="mockup-browser bg-base-300 border">
         <div className="mockup-browser-toolbar">
          <div className="input">
-          https://insights.app/b/{formData.slug || "board-url"}
+          {APP_URL}/b/{formData.slug || "board-url"}
          </div>
         </div>
         <div className="bg-base-100 px-6 py-8">
