@@ -7,6 +7,7 @@ import {HeaderComponent} from "@/components/HeaderComponent";
 import {FaSave} from "react-icons/fa";
 import {toast} from "@/utils/toast";
 import {Link} from "@/i18n/navigation";
+import {updateUserSettings} from "@/frontend apis/apiClient";
 
 export default function AccountPage() {
  const {data: session} = useSession();
@@ -20,10 +21,13 @@ export default function AccountPage() {
  });
 
  useEffect(() => {
-  if (session?.user?.account_tier) {
+  const userWithTier = session?.user as {
+   account_tier?: "FREE" | "PRO" | "ENTERPRISE";
+  };
+  if (userWithTier?.account_tier) {
    setAccountSettings((prev) => ({
     ...prev,
-    accountTier: session?.user?.account_tier as "FREE" | "PRO" | "ENTERPRISE",
+    accountTier: userWithTier.account_tier as "FREE" | "PRO" | "ENTERPRISE",
    }));
   }
  }, [session]);
@@ -33,19 +37,8 @@ export default function AccountPage() {
   setIsSaving(true);
 
   try {
-   const response = await fetch("/api/user/settings", {
-    method: "PUT",
-    headers: {
-     "Content-Type": "application/json",
-    },
-    body: JSON.stringify(accountSettings),
-   });
-
-   if (response.ok) {
-    toast.success("Settings updated successfully!");
-   } else {
-    throw new Error("Failed to update settings");
-   }
+   await updateUserSettings(accountSettings);
+   toast.success("Settings updated successfully!");
   } catch {
    toast.error("Failed to update settings. Please try again.");
   } finally {
@@ -92,7 +85,10 @@ export default function AccountPage() {
           </div>
          </div>
          {accountSettings.accountTier === "FREE" && (
-          <Link href="/dashboard/settings/billing" className="btn btn-primary btn-sm mt-3">
+          <Link
+           href="/dashboard/settings/billing"
+           className="btn btn-primary btn-sm mt-3"
+          >
            Upgrade Plan
           </Link>
          )}
@@ -118,9 +114,7 @@ export default function AccountPage() {
              }
             />
             <div>
-             <div className="label-text font-medium">
-              Email Notifications
-             </div>
+             <div className="label-text font-medium">Email Notifications</div>
              <div className="label-text-alt">
               Receive emails about new feature requests and updates
              </div>
@@ -154,11 +148,7 @@ export default function AccountPage() {
        </div>
 
        <div className="card-actions justify-end mt-6">
-        <button
-         type="submit"
-         className="btn btn-primary"
-         disabled={isSaving}
-        >
+        <button type="submit" className="btn btn-primary" disabled={isSaving}>
          {isSaving ? (
           <>
            <span className="loading loading-spinner loading-sm"></span>

@@ -4,6 +4,7 @@ import {useState, useEffect} from "react";
 import {useSession} from "next-auth/react";
 import {toast} from "@/utils/toast";
 import {FeatureRequestWithDetails, RequestStatus} from "@/types";
+import {updateFeatureRequest} from "@/frontend apis/apiClient";
 
 interface EditFeatureRequestModalProps {
  isOpen: boolean;
@@ -45,19 +46,11 @@ export function EditFeatureRequestModal({
   setError("");
 
   try {
-   const response = await fetch(`/api/feature-requests/${request.id}`, {
-    method: "PUT",
-    headers: {
-     "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-     title: title.trim(),
-     description: description.trim() || null,
-     status: isBoardOwner ? status : undefined, // Only include status if user is board owner
-    }),
+   const result = await updateFeatureRequest(request.id, {
+    title: title.trim(),
+    description: description.trim() || null,
+    status: isBoardOwner ? status : undefined, // Only include status if user is board owner
    });
-
-   const result = await response.json();
 
    if (result.success) {
     toast.success("Feature request updated successfully");

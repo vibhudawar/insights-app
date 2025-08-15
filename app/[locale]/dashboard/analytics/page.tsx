@@ -7,7 +7,7 @@ import {BoardWithRequests} from "@/types";
 import {FaPlus} from "react-icons/fa6";
 import {FiClipboard} from "react-icons/fi";
 import {filterBoards} from "@/utils/utility";
-import {getBoards} from "@/frontend apis/Feature Requests/BoardApi";
+import {getBoards} from "@/frontend apis/apiClient";
 import {CiSearch} from "react-icons/ci";
 import {HeaderComponent} from "@/components/HeaderComponent";
 import {SearchBar} from "@/components/SearchBar.component";

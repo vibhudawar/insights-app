@@ -7,6 +7,7 @@ import Image from "next/image";
 import {HeaderComponent} from "@/components/HeaderComponent";
 import {FaSave} from "react-icons/fa";
 import {toast} from "@/utils/toast";
+import {updateUserProfile} from "@/frontend apis/apiClient";
 
 export default function ProfilePage() {
  const {data: session, update} = useSession();
@@ -42,27 +43,15 @@ export default function ProfilePage() {
   setIsSaving(true);
 
   try {
-   const response = await fetch("/api/user/profile", {
-    method: "PUT",
-    headers: {
-     "Content-Type": "application/json",
+   const updatedUser = await updateUserProfile(profileForm);
+   await update({
+    ...session,
+    user: {
+     ...session?.user,
+     ...updatedUser.data,
     },
-    body: JSON.stringify(profileForm),
    });
-
-   if (response.ok) {
-    const updatedUser = await response.json();
-    await update({
-     ...session,
-     user: {
-      ...session?.user,
-      ...updatedUser.data,
-     },
-    });
-    toast.success("Profile updated successfully!");
-   } else {
-    throw new Error("Failed to update profile");
-   }
+   toast.success("Profile updated successfully!");
   } catch {
    toast.error("Failed to update profile. Please try again.");
   } finally {

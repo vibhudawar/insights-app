@@ -1,3 +1,10 @@
+/**
+ * @deprecated This file is deprecated. All API functions have been moved to @/frontend apis/apiClient.ts
+ * Please import from @/frontend apis/apiClient instead.
+ * This file is kept for reference and will be removed in a future update.
+ */
+
+/*
 // Feature Status API
 export const updateFeatureStatus = async (
  requestId: string,
@@ -46,3 +53,4 @@ export const deleteComment = async (requestId: string, commentId: string) => {
  }
  return response;
 };
+*/

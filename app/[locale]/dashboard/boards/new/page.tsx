@@ -8,9 +8,9 @@ import {CreateBoardFormData} from "@/types";
 import {FaRegCopy} from "react-icons/fa";
 import {toast} from "@/utils/toast";
 import {APP_URL} from "@/constants";
-import {createBoard} from "@/frontend apis/Feature Requests/BoardApi";
-import { RiErrorWarningLine } from "react-icons/ri";
-import { HeaderComponent } from "@/components/HeaderComponent";
+import {createBoard} from "@/frontend apis/apiClient";
+import {RiErrorWarningLine} from "react-icons/ri";
+import {HeaderComponent} from "@/components/HeaderComponent";
 
 export default function NewBoardPage() {
  const router = useRouter();

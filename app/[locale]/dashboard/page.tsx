@@ -14,10 +14,7 @@ import {FaPlus} from "react-icons/fa6";
 import {StatsCard} from "@/components/StatsCard.component";
 import {NoStateComponent} from "@/components/NoState.component";
 import {BoardRow} from "@/components/BoardRow.component";
-import {
- getBoards,
- getDashboardStats,
-} from "@/frontend apis/Feature Requests/BoardApi";
+import {getBoards, getDashboardStats} from "@/frontend apis/apiClient";
 
 export default function DashboardPage() {
  const {data: session} = useSession();

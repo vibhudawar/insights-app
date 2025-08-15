@@ -14,10 +14,13 @@ export default function BillingPage() {
  });
 
  useEffect(() => {
-  if (session?.user?.account_tier) {
+  const userWithTier = session?.user as {
+   account_tier?: "FREE" | "PRO" | "ENTERPRISE";
+  };
+  if (userWithTier?.account_tier) {
    setAccountSettings((prev) => ({
     ...prev,
-    accountTier: session.user.account_tier as "FREE" | "PRO" | "ENTERPRISE",
+    accountTier: userWithTier.account_tier as "FREE" | "PRO" | "ENTERPRISE",
    }));
   }
  }, [session]);

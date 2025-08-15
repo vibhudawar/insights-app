@@ -6,7 +6,7 @@ import {BoardWithRequests} from "@/types";
 import {HeaderComponent} from "@/components/HeaderComponent";
 import {FaPlus} from "react-icons/fa6";
 import {filterBoards, formatDate} from "@/utils/utility";
-import {getBoards} from "@/frontend apis/Feature Requests/BoardApi";
+import {getBoards} from "@/frontend apis/apiClient";
 import {NoStateComponent} from "@/components/NoState.component";
 import {CiSearch} from "react-icons/ci";
 import {HiOutlineViewBoards} from "react-icons/hi";

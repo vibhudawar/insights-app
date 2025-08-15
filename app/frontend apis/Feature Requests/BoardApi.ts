@@ -1,3 +1,10 @@
+/**
+ * @deprecated This file is deprecated. All API functions have been moved to @/frontend apis/apiClient.ts
+ * Please import from @/frontend apis/apiClient instead.
+ * This file is kept for reference and will be removed in a future update.
+ */
+
+/*
 import {CreateBoardFormData} from "@/types";
 
 export const getDashboardStats = async () => {
@@ -114,3 +121,4 @@ export const deleteFeatureRequest = async ({
  });
  return response;
 };
+*/

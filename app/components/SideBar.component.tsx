@@ -161,7 +161,7 @@ export const SideBarComponent = ({children}: SideBarProps) => {
       </Link>
      </div>
      <div className="navbar-end">
-      <UserAvatar user={user} />
+      <UserAvatar user={user || {}} />
      </div>
     </div>
 
@@ -209,7 +209,11 @@ export const SideBarComponent = ({children}: SideBarProps) => {
 };
 
 // Sub-components for better organization
-const UserAvatar = ({user}: {user: any}) => (
+const UserAvatar = ({
+ user,
+}: {
+ user: {image?: string | null; name?: string | null; email?: string | null};
+}) => (
  <div className="avatar">
   <div className="w-8 h-8 rounded-full">
    {user?.image ? (
@@ -315,7 +319,7 @@ const UserProfileSection = ({
  user,
  handleSignOut,
 }: {
- user: any;
+ user: {image?: string | null; name?: string | null; email?: string | null};
  handleSignOut: () => void;
 }) => (
  <div className="flex items-center gap-3">

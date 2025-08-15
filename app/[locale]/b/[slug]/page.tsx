@@ -34,7 +34,7 @@ import {
  getFeatureRequests,
  saveFeatureRequest,
  upvoteFeatureRequest,
-} from "@/frontend apis/Feature Requests/BoardApi";
+} from "@/frontend apis/apiClient";
 import {FaPlus} from "react-icons/fa6";
 import {IoSearch} from "react-icons/io5";
 import {daisyThemes} from "@/constants";

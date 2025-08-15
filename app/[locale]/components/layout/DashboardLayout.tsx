@@ -114,7 +114,7 @@ export function DashboardLayout({children}: DashboardLayoutProps) {
           return (
            <li key={item.name}>
             <Link
-             href={item.href}
+             href={item.href || "/dashboard"}
              className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${
               isCurrent
                ? "bg-primary text-primary-content"
@@ -223,7 +223,10 @@ export function DashboardLayout({children}: DashboardLayoutProps) {
            : pathname === item.href || pathname.startsWith(item.href + "/");
          return (
           <li key={item.name}>
-           <Link href={item.href} className="flex items-center gap-2">
+           <Link
+            href={item.href || "/dashboard"}
+            className="flex items-center gap-2"
+           >
             {item.icon && (
              <item.icon className="h-4 w-4" isActive={isCurrent} />
             )}

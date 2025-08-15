@@ -31,19 +31,22 @@ export function FeatureRequestCard({
  const t = useTranslations();
  const [isDeleting, setIsDeleting] = useState(false);
  const user = useCurrentUser();
- const userId = user?.id;
+ const userId = (user as {id?: string})?.id;
+ const requestStatus = request.status;
 
  const isOwnRequest = userId === request.submitter_id;
  const isBoardOwner = userId === boardCreatorId;
  const canModify = isOwnRequest || isBoardOwner;
  const hasUpvoted = userUpvotes.has(request.id);
 
- const statusColors = {
-  NEW: "badge-info",
-  IN_PROGRESS: "badge-warning",
-  SHIPPED: "badge-success",
-  CANCELLED: "badge-error",
- };
+ const statusMap = {
+  NEW: {key: "new", color: "badge-info"},
+  IN_PROGRESS: {key: "inProgress", color: "badge-warning"},
+  SHIPPED: {key: "shipped", color: "badge-success"},
+  CANCELLED: {key: "cancelled", color: "badge-error"},
+ } as const;
+
+ const currentStatus = statusMap[requestStatus];
 
  const handleUpvoteClick = (e: React.MouseEvent) => {
   e.stopPropagation();
@@ -127,13 +130,9 @@ export function FeatureRequestCard({
 
         {/* Status and ownership indicators */}
         <div className="flex items-center gap-2 mb-2">
-         {request.status !== "NEW" && (
-          <div
-           className={`badge badge-sm ${
-            statusColors[request.status as keyof typeof statusColors]
-           }`}
-          >
-           {t(`status.${request.status.toLowerCase()}`)}
+         {currentStatus && (
+          <div className={`badge badge-sm ${currentStatus.color}`}>
+           {t(`publicBoard.status.${currentStatus.key}`)}
           </div>
          )}
 

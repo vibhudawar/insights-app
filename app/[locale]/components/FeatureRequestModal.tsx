@@ -8,6 +8,12 @@ import {FaChevronUp} from "react-icons/fa6";
 import {toast} from "@/utils/toast";
 import {FaEdit, FaTrash} from "react-icons/fa";
 import {EditCommentModal} from "@/components/EditCommentModal";
+import {
+ deleteComment,
+ getComments,
+ postComment,
+ updateFeatureStatus,
+} from "@/frontend apis/apiClient";
 
 interface FeatureRequestModalProps {
  request: FeatureRequestWithDetails;
@@ -42,8 +48,11 @@ export function FeatureRequestModal({
  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
  const [selectedStatus, setSelectedStatus] = useState<string>(request.status);
  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
- const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
- const [editingComment, setEditingComment] = useState<CommentWithReplies | null>(null);
+ const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
+  null
+ );
+ const [editingComment, setEditingComment] =
+  useState<CommentWithReplies | null>(null);
 
  const {data: session} = useSession();
  const {executeWithAuth} = useAuthAction({
@@ -97,11 +106,8 @@ export function FeatureRequestModal({
 
   setIsLoadingComments(true);
   try {
-   const response = await fetch(`/api/feature-requests/${request.id}/comments`);
-   if (response.ok) {
-    const data = await response.json();
-    setComments(data.data || []);
-   }
+   const data = await getComments(request.id);
+   setComments(data.data || []);
   } catch (error) {
    console.error("Error fetching comments:", error);
   } finally {
@@ -115,51 +121,6 @@ export function FeatureRequestModal({
   }
  }, [isOpen, request.id, fetchComments]);
 
- // SSE connection for real-time comment updates
- const handleSSEEvent = useCallback((event: any) => {
-  console.log('Comment SSE event received:', event);
-  
-  switch (event.type) {
-   case 'comment_created':
-    if (event.data.feature_request_id === request.id) {
-     // Add new comment to the list
-     fetchComments(); // Refresh to get the new comment with proper structure
-    }
-    break;
-    
-   case 'comment_updated':
-    if (event.data.feature_request_id === request.id) {
-     // Update existing comment
-     setComments(prev => 
-      prev.map(comment => 
-       comment.id === event.data.id 
-        ? { 
-           ...comment, 
-           content: event.data.content,
-           is_edited: event.data.is_edited,
-           updated_at: event.data.updated_at
-          }
-        : comment
-      )
-     );
-    }
-    break;
-    
-   case 'comment_deleted':
-    if (event.data.feature_request_id === request.id) {
-     // Remove comment from the list
-     setComments(prev => prev.filter(comment => comment.id !== event.data.id));
-     
-     // Close edit modal if the deleted comment is being edited
-     if (editingCommentId === event.data.id) {
-      setEditingCommentId(null);
-      setEditingComment(null);
-     }
-    }
-    break;
-  }
- }, [request.id, editingCommentId, editingComment, fetchComments]);
-
  const handleSubmitComment = async (e: React.FormEvent) => {
   e.preventDefault();
   if (!request.id) return;
@@ -168,21 +129,11 @@ export function FeatureRequestModal({
   setCommentError("");
 
   try {
-   const response = await fetch(
-    `/api/feature-requests/${request.id}/comments`,
-    {
-     method: "POST",
-     headers: {
-      "Content-Type": "application/json",
-     },
-     body: JSON.stringify({
-      content: commentForm.content,
-      parentCommentId: replyToComment,
-     }),
-    }
+   const result = await postComment(
+    request.id,
+    commentForm.content,
+    replyToComment || undefined
    );
-
-   const result = await response.json();
 
    if (result.success) {
     setCommentForm({
@@ -212,7 +163,7 @@ export function FeatureRequestModal({
 
  const handleEditComment = (commentId: string) => {
   executeWithAuth(() => {
-   const comment = comments.find(c => c.id === commentId);
+   const comment = comments.find((c) => c.id === commentId);
    if (comment) {
     setEditingComment(comment);
     setEditingCommentId(commentId);
@@ -227,26 +178,22 @@ export function FeatureRequestModal({
 
  const handleDeleteComment = async (commentId: string) => {
   executeWithAuth(async () => {
-   if (!window.confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+   if (
+    !window.confirm(
+     "Are you sure you want to delete this comment? This action cannot be undone."
+    )
+   ) {
     return;
    }
 
    setDeletingCommentId(commentId);
    try {
-    const response = await fetch(`/api/feature-requests/${request.id}/comments/${commentId}`, {
-     method: 'DELETE',
-    });
-
-    if (response.ok) {
-     fetchComments(); // Refresh comments
-     toast.success('Comment deleted successfully');
-    } else {
-     const errorData = await response.json();
-     toast.error(errorData.error || 'Failed to delete comment');
-    }
+    await deleteComment(request.id, commentId);
+    fetchComments();
+    toast.success("Comment deleted successfully");
    } catch (error) {
-    console.error('Error deleting comment:', error);
-    toast.error('An error occurred while deleting the comment');
+    console.error("Error deleting comment:", error);
+    toast.error("An error occurred while deleting the comment");
    } finally {
     setDeletingCommentId(null);
    }
@@ -258,21 +205,8 @@ export function FeatureRequestModal({
 
   setIsUpdatingStatus(true);
   try {
-   const response = await fetch(`/api/feature-requests/${request.id}/status`, {
-    method: "PUT",
-    headers: {
-     "Content-Type": "application/json",
-    },
-    body: JSON.stringify({status: selectedStatus}),
-   });
-
-   if (response.ok) {
-    onStatusUpdate(request.id, selectedStatus);
-   } else {
-    const errorData = await response.json();
-    alert(errorData.error || "Failed to update status");
-    setSelectedStatus(request.status); // Reset to original status
-   }
+   await updateFeatureStatus(request.id, selectedStatus);
+   onStatusUpdate(request.id, selectedStatus);
   } catch {
    alert("An error occurred. Please try again.");
    setSelectedStatus(request.status); // Reset to original status
@@ -495,7 +429,9 @@ export function FeatureRequestModal({
               {formatDate(comment.created_at)}
              </span>
              {comment.is_edited && (
-              <span className="text-xs text-base-content/50 italic">(edited)</span>
+              <span className="text-xs text-base-content/50 italic">
+               (edited)
+              </span>
              )}
             </div>
             {canModifyComment(comment) && (
@@ -574,7 +510,7 @@ export function FeatureRequestModal({
      )}
     </div>
    </div>
-   
+
    {/* Edit Comment Modal */}
    <EditCommentModal
     isOpen={!!editingComment}

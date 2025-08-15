@@ -6,6 +6,7 @@ import {DashboardLayout} from "@/components/layout/DashboardLayout";
 import {HeaderComponent} from "@/components/HeaderComponent";
 import {MdDangerous} from "react-icons/md";
 import {toast} from "@/utils/toast";
+import {deleteUserAccount} from "@/frontend apis/apiClient";
 
 export default function DangerZonePage() {
  const [isLoading, setIsLoading] = useState(false);
@@ -21,15 +22,8 @@ export default function DangerZonePage() {
 
   setIsLoading(true);
   try {
-   const response = await fetch("/api/user/delete", {
-    method: "DELETE",
-   });
-
-   if (response.ok) {
-    await signOut({callbackUrl: "/"});
-   } else {
-    throw new Error("Failed to delete account");
-   }
+   await deleteUserAccount();
+   await signOut({callbackUrl: "/"});
   } catch {
    toast.error("Failed to delete account. Please try again.");
   } finally {

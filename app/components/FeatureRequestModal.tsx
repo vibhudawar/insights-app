@@ -16,7 +16,7 @@ import {
  getComments,
  postComment,
  updateFeatureStatus,
-} from "@/frontend apis/Feature Requests/FeatureRequestApi";
+} from "@/frontend apis/apiClient";
 
 interface FeatureRequestModalProps {
  request: FeatureRequestWithDetails;
@@ -58,7 +58,7 @@ export function FeatureRequestModal({
 
  // Helper function to check if user can modify a comment
  const canModifyComment = (comment: Comment) => {
-  const userId = user?.id;
+  const userId = (user as {id?: string})?.id;
   const isCommentAuthor = userId === comment.author_id;
   const isBoardOwner = userId === request.board?.creator_id;
   return isCommentAuthor || isBoardOwner;
@@ -95,7 +95,7 @@ export function FeatureRequestModal({
    const response = await postComment(
     request.id,
     commentForm.content,
-    replyToComment
+    replyToComment || undefined
    );
 
    if (response.success) {

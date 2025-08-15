@@ -11,6 +11,11 @@ import {FaRegCopy} from "react-icons/fa";
 import {RiDeleteBinLine} from "react-icons/ri";
 import {toast} from "@/utils/toast";
 import {APP_URL, daisyThemes} from "@/constants";
+import {
+ getBoard,
+ updateBoardDetails,
+ deleteBoardWithConfirmation,
+} from "@/frontend apis/apiClient";
 
 interface ThemeConfig {
  primaryColor: string;
@@ -53,10 +58,10 @@ export default function EditBoardPage() {
  useEffect(() => {
   const fetchBoard = async () => {
    try {
-    const response = await fetch(`/api/boards/slug/${slug}`);
-    if (response.ok) {
-     const data = await response.json();
-     const boardData = data.data;
+    const data = await getBoard(slug);
+    const boardData = data.data;
+
+    if (boardData) {
      setBoard(boardData);
 
      setBoardForm({
@@ -139,23 +144,13 @@ export default function EditBoardPage() {
   setIsSaving(true);
 
   try {
-   const response = await fetch(`/api/boards/${params.slug}/board`, {
-    method: "PUT",
-    headers: {
-     "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-     ...boardForm,
-     theme_config: selectedTheme ? selectedTheme : themeConfig,
-    }),
+   await updateBoardDetails(params.slug as string, {
+    ...boardForm,
+    themeConfig: selectedTheme
+     ? {presetTheme: selectedTheme}
+     : (themeConfig as unknown as Record<string, unknown>),
    });
-
-   if (response.ok) {
-    showMessage(t("board.boardUpdated"), "success");
-   } else {
-    const errorData = await response.json();
-    throw new Error(errorData.error || "Failed to update board");
-   }
+   showMessage(t("board.boardUpdated"), "success");
   } catch (err) {
    showMessage(t("board.failedToUpdate"), "error");
   } finally {
@@ -178,19 +173,11 @@ export default function EditBoardPage() {
 
   setIsDeleting(true);
   try {
-   const response = await fetch(`/api/boards/${params.slug}/board`, {
-    method: "DELETE",
-   });
-
-   if (response.ok) {
-    showMessage(t("board.boardDeleted"), "success");
-    setTimeout(() => {
-     window.location.href = "/dashboard/boards";
-    }, 1500);
-   } else {
-    const errorData = await response.json();
-    throw new Error(errorData.error || "Failed to delete board");
-   }
+   await deleteBoardWithConfirmation(params.slug as string);
+   showMessage(t("board.boardDeleted"), "success");
+   setTimeout(() => {
+    window.location.href = "/dashboard/boards";
+   }, 1500);
   } catch (err) {
    showMessage(t("board.failedToDelete"), "error");
   } finally {
