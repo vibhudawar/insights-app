@@ -89,9 +89,10 @@ export interface ApiResponse<T> {
 // Navigation types
 export interface NavItem {
   name: string;
-  href: string;
+  href?: string;
   icon?: React.ComponentType<{ className?: string; isActive?: boolean }>;
   current?: boolean;
+  children?: NavItem[];
 }
 
 // Re-export Prisma types

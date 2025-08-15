@@ -3,10 +3,10 @@ import {Link} from "@/i18n/navigation";
 interface HeaderComponentProps {
  title: string;
  description: string;
- buttonText: string;
- buttonIcon: React.ReactNode;
+ buttonText?: string;
+ buttonIcon?: React.ReactNode;
  showButton: boolean;
- buttonLink: string;
+ buttonLink?: string;
 }
 
 export const HeaderComponent = (props: HeaderComponentProps) => {
@@ -21,7 +21,7 @@ export const HeaderComponent = (props: HeaderComponentProps) => {
     </div>
     {props.showButton && (
      <div className="flex gap-3">
-      <Link href={props.buttonLink} className="btn btn-primary">
+      <Link href={props.buttonLink || "/"} className="btn btn-primary">
        {props.buttonIcon}
        {props.buttonText}
       </Link>

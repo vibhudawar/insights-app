@@ -7,3 +7,5 @@ export const daisyThemes = [
   "cmyk", "autumn", "business", "acid", "lemonade", "night", "coffee", "winter", 
   "dim", "nord", "sunset"
  ];
+
+ 

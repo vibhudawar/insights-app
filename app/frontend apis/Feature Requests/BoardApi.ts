@@ -1,3 +1,5 @@
+import {CreateBoardFormData} from "@/types";
+
 export const getDashboardStats = async () => {
  const response = await fetch("/api/dashboard/stats");
  if (!response.ok) {
@@ -10,7 +12,7 @@ export const getBoards = async (limit?: number) => {
  const limitParam = limit ? `?limit=${limit}` : "";
  const response = await fetch(`/api/boards${limitParam}`);
  if (!response.ok) {
-  throw new Error("Failed to fetch boards");
+  throw new Error(`Failed to fetch boards: ${response.statusText}`);
  }
  return response.json();
 };
@@ -20,6 +22,17 @@ export const getBoard = async (slug: string) => {
  if (!response.ok) {
   throw new Error("Failed to fetch board");
  }
+ return response.json();
+};
+
+export const createBoard = async (boardDetails: CreateBoardFormData) => {
+ const response = await fetch("/api/boards", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+   },
+  body: JSON.stringify(boardDetails),
+ });
  return response.json();
 };
 
@@ -55,7 +68,7 @@ export const getFeatureRequests = async ({
   fetchOptions
  );
  if (!response.ok) {
-  throw new Error("Failed to fetch feature requests");
+  throw new Error(`Failed to fetch feature requests: ${response.statusText}`);
  }
  return response.json();
 };

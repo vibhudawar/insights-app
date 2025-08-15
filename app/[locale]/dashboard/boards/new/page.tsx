@@ -8,6 +8,9 @@ import {CreateBoardFormData} from "@/types";
 import {FaRegCopy} from "react-icons/fa";
 import {toast} from "@/utils/toast";
 import {APP_URL} from "@/constants";
+import {createBoard} from "@/frontend apis/Feature Requests/BoardApi";
+import { RiErrorWarningLine } from "react-icons/ri";
+import { HeaderComponent } from "@/components/HeaderComponent";
 
 export default function NewBoardPage() {
  const router = useRouter();
@@ -72,16 +75,7 @@ export default function NewBoardPage() {
   setError("");
 
   try {
-   const response = await fetch("/api/boards", {
-    method: "POST",
-    headers: {
-     "Content-Type": "application/json",
-    },
-    body: JSON.stringify(formData),
-   });
-
-   const result = await response.json();
-
+   const result = await createBoard(formData);
    if (result.success) {
     router.push(`/dashboard/boards/${result.data.slug}/edit`);
    } else {
@@ -98,43 +92,18 @@ export default function NewBoardPage() {
   <DashboardLayout>
    <div className="max-w-2xl mx-auto">
     {/* Header */}
-    <div className="mb-8">
-     <div className="flex items-center gap-2 text-sm breadcrumbs">
-      <Link href="/dashboard" className="link link-hover">
-       Dashboard
-      </Link>
-      <span>/</span>
-      <Link href="/dashboard/boards" className="link link-hover">
-       Boards
-      </Link>
-      <span>/</span>
-      <span>New Board</span>
-     </div>
-     <h1 className="text-3xl font-bold mt-4">Create New Board</h1>
-     <p className="text-base-content/70 mt-2">
-      Set up a new feedback board to start collecting feature requests from your
-      users.
-     </p>
-    </div>
+    <HeaderComponent
+     title="Create New Board"
+     description="Set up a new feedback board to start collecting feature requests from your users."
+     showButton={false}
+    />
 
     {/* Form */}
     <div className="card bg-base-100 shadow-sm">
      <div className="card-body">
       {error && (
        <div className="alert alert-error mb-6">
-        <svg
-         xmlns="http://www.w3.org/2000/svg"
-         className="stroke-current shrink-0 h-6 w-6"
-         fill="none"
-         viewBox="0 0 24 24"
-        >
-         <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-         />
-        </svg>
+        <RiErrorWarningLine className="w-4 h-4" />
         <span>{error}</span>
        </div>
       )}
@@ -213,26 +182,6 @@ export default function NewBoardPage() {
         </label>
        </div>
 
-       {/* Board Visibility */}
-       <div className="form-control mb-6">
-        <label className="label cursor-pointer justify-start gap-3">
-         <input
-          type="checkbox"
-          name="isPublic"
-          className="checkbox checkbox-primary"
-          checked={formData.isPublic}
-          onChange={handleInputChange}
-         />
-         <div>
-          <span className="label-text font-medium">Make board public</span>
-          <div className="text-sm text-base-content/70">
-           Public boards can be accessed by anyone with the URL. Private boards
-           require authentication.
-          </div>
-         </div>
-        </label>
-       </div>
-
        {/* Form Actions */}
        <div className="flex gap-3 justify-end">
         <Link href="/dashboard" className="btn btn-ghost">
@@ -273,9 +222,7 @@ export default function NewBoardPage() {
          {formData.description && (
           <p className="text-base-content/70 mb-4">{formData.description}</p>
          )}
-         <div className="text-sm text-base-content/50">
-          {formData.isPublic ? "🌐 Public board" : "🔒 Private board"}
-         </div>
+         <div className="text-sm text-base-content/50">🌐 Public board</div>
         </div>
        </div>
       </div>

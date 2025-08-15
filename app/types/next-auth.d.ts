@@ -7,6 +7,9 @@ declare module "next-auth" {
       image?: string | null
       username?: string | null
       country?: string | null
+      account_tier?: "FREE" | "PRO" | "ENTERPRISE" | null
+      created_at?: Date | null
+      updated_at?: Date | null
     }
   }
 
@@ -14,6 +17,7 @@ declare module "next-auth" {
     id: string
     username?: string | null
     country?: string | null
+    account_tier?: "FREE" | "PRO" | "ENTERPRISE" | null
   }
 }
 

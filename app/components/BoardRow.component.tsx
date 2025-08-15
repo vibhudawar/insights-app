@@ -32,12 +32,15 @@ export const BoardRow = (props: BoardRowProps) => {
     <div className="flex items-center gap-2">
      <Link
       href={props.buttonOneLink}
-      className="btn btn-sm btn-ghost"
+      className="btn btn-sm btn-soft btn-primary"
       target="_blank"
      >
       {props.buttonOneText}
      </Link>
-     <Link href={props.buttonTwoLink} className="btn btn-sm btn-outline">
+     <Link
+      href={props.buttonTwoLink}
+      className="btn btn-sm btn-soft btn-warning hover:text-white"
+     >
       {props.buttonTwoText}
      </Link>
     </div>

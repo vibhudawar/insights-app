@@ -5,6 +5,7 @@ import {useTranslations} from "next-intl";
 import {FaChevronUp, FaComment, FaCrown} from "react-icons/fa";
 import {FeatureRequestWithDetails} from "@/types";
 import {useCurrentUser} from "@/hooks/useCurrentUser";
+import {formatDate} from "@/utils/utility";
 
 interface FeatureRequestCardProps {
  request: FeatureRequestWithDetails;
@@ -78,14 +79,6 @@ export function FeatureRequestCard({
   if (isClickable) {
    onClick?.(request);
   }
- };
-
- const formatDate = (date: string | Date) => {
-  return new Date(date).toLocaleDateString("en-US", {
-   year: "numeric",
-   month: "short",
-   day: "numeric",
-  });
  };
 
  return (

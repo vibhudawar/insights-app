@@ -24,7 +24,30 @@ export const authOptions = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async session({ session, token }: { session: any; token: any }) {
       if (token.id && session.user) {
-        session.user.id = token.id;
+        // Fetch complete user data from database
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            username: true,
+            country: true,
+            account_tier: true,
+            created_at: true,
+            updated_at: true,
+          },
+        });
+
+        if (dbUser) {
+          session.user = {
+            ...session.user,
+            ...dbUser,
+          };
+        } else {
+          session.user.id = token.id;
+        }
       }
       return session;
     },

@@ -412,7 +412,7 @@ export default function EditBoardPage() {
             </label>
            </fieldset>
 
-           <div className="form-control">
+           {/* <div className="form-control">
             <label className="label cursor-pointer justify-start gap-4">
              <input
               type="checkbox"
@@ -431,7 +431,7 @@ export default function EditBoardPage() {
               </div>
              </div>
             </label>
-           </div>
+           </div> */}
           </div>
          </form>
         </div>
@@ -452,7 +452,7 @@ export default function EditBoardPage() {
            </label>
            <div className="dropdown w-full">
             <div
-             tabIndex="0"
+             tabIndex={0}
              role="button"
              className="btn btn-outline w-full justify-between"
             >
@@ -470,7 +470,7 @@ export default function EditBoardPage() {
              </svg>
             </div>
             <ul
-             tabIndex="0"
+             tabIndex={0}
              className="dropdown-content bg-base-300 rounded-box z-[1] w-full max-h-60 overflow-y-auto p-2 shadow-2xl"
             >
              <li>
